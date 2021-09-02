@@ -24,7 +24,7 @@ Hooks.on("deleteToken", () => {
 });
 
 Hooks.on("updateScene", (scene, data) => {
-    if ("world-explorer" in data.flags) {
+    if (data.flags && "world-explorer" in data.flags) {
         canvas.background.explorationOverlay?.refreshMask();
     }
 })

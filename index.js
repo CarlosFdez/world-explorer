@@ -1,4 +1,4 @@
-import { BackgroundOverlay } from "./background-overlay.mjs"
+import { WorldExplorerLayer } from "./world-explorer-layer.mjs";
 
 Hooks.on("init", async () => {
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
@@ -13,31 +13,44 @@ Hooks.on("init", async () => {
 })
 
 Hooks.on("canvasInit", () => {
-    canvas.background.explorationOverlay = new BackgroundOverlay(canvas.scene);
+    canvas.worldExplorer = new WorldExplorerLayer();
+    canvas.stage.addChild(canvas.worldExplorer);
+
+    // Add world explorer layer to be right after the background
+    const canvasLayers = Canvas.layers;
+    const layers = {};
+    for (const [key, value] of Object.entries(canvasLayers)) {
+        layers[key] = value;
+        if (key === "background") {
+            layers.worldExplorer = canvas.worldExplorer;
+        }
+    }
+
+    Object.defineProperty(Canvas, "layers", { get: () => layers });
 });
 
 Hooks.on("canvasReady", () => {
-    canvas.background.explorationOverlay?.ready();
+    canvas.worldExplorer?.ready();
 });
 
 Hooks.on("createToken", (token) => {
-    if (token.object?.observer) canvas.background.explorationOverlay?.refreshMask();
+    if (token.object?.observer) canvas.worldExplorer?.refreshMask();
 });
 
 Hooks.on("updateToken", (token, data) => {
     if (!token.object?.observer) return;
     if (data.x || data.y) {
-        canvas.background.explorationOverlay?.refreshMask();
+        canvas.worldExplorer?.refreshMask();
     }
 });
 
 Hooks.on("deleteToken", () => {
-    canvas.background.explorationOverlay?.refreshMask();
+    canvas.worldExplorer?.refreshMask();
 });
 
 Hooks.on("updateScene", (scene, data) => {
     if (scene.id !== canvas.scene.id) return;
     if (data.flags && "world-explorer" in data.flags) {
-        canvas.background.explorationOverlay?.update(scene);
+        canvas.worldExplorer?.update(scene);
     }
 });

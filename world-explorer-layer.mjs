@@ -4,34 +4,31 @@ function makePositionKey(position) {
 
 const MODULE = "world-explorer";
 
-export class BackgroundOverlay {
-    initialized = false;
+export class WorldExplorerLayer extends CanvasLayer {
+    _ready = false;
+    _initialized = false;
 
-    constructor(scene) {
+    constructor() {
+        super();
+
+        const scene = canvas.scene;
         this.scene = scene;
         this.color = 0xCCCCCC;
+        this.alpha = game.user.isGM ? 0.7 : 1;
         this.state = {};
 
         const flags = scene.data.flags[MODULE];
         this._enabled = flags.enabled;
         this.color = flags.color || 0;
-        this.initialize();
-
-        // this will start loading the image, so do it last
         this.image = flags.image;
     }
 
     initialize() {
+        if (this._initialized) return;
         const dimensions = canvas.dimensions;
 
         // Draw and add the overlay immediately first.
-        // Attempt to not let players see anything until after it loads
         this.overlay = new PIXI.Graphics();
-        this.overlay.alpha = this.alpha;
-        this.refreshOverlay();
-        if (this.enabled) {
-            canvas.background.addChild(this.overlay);
-        }
 
         // Create mask (to punch holes in to reveal tiles/players)
         this.maskTexture = PIXI.RenderTexture.create({
@@ -46,19 +43,32 @@ export class BackgroundOverlay {
         this.fogSprite.width = dimensions.sceneRect.width;
         this.fogSprite.height = dimensions.sceneRect.height;
         this.overlay.addChild(this.fogSprite);
+
+        this._initialized = true;
+
+        this.refreshImage();
     }
 
     /** Canvas ready again. Anything we added to the background must be re-added */
     ready() {
+        this.initialize();
+        this._ready = true;
         if (this.enabled) {
-            //canvas.background.addChild(this.overlay); 
-            this.overlay.addChild(this.mask);
-            this.overlay.mask = this.mask;
             this._resetState();
             this.refreshMask();
         }
         canvas.grid.addHighlightLayer("exploration");
         this._registerMouseListeners();
+    }
+
+    async draw() {
+        await super.draw();
+        this.initialize();
+        this.addChild(this.overlay);
+        this.addChild(this.mask);
+        this.refreshOverlay();
+        this.refreshMask();
+        return this;
     }
 
     update(scene) {
@@ -75,10 +85,6 @@ export class BackgroundOverlay {
             this.refreshMask();
         }
     }
-    
-    get alpha() {
-        return game.user.isGM ? 0.7 : 1;
-    }
 
     get enabled() {
         return !!this._enabled;
@@ -88,11 +94,11 @@ export class BackgroundOverlay {
         this._enabled = value;
         
         if (value) {
-            canvas.background.addChild(this.overlay);
+            this.visible = true;
             this.refreshOverlay();
             this.refreshMask();
         } else {
-            canvas.background.removeChild(this.overlay);
+            this.visible = false;
             this.overlay.clear();
             this._resetState();
         }
@@ -109,18 +115,10 @@ export class BackgroundOverlay {
         canvas.grid.clearHighlightLayer("exploration");
     }
 
-    set image(image) {
-        this._image = image;
-        this.refreshImage();
-    }
-
-    get image() {
-        return this._image;
-    }
-
-    refreshImage() {
-        if (this.enabled && this.image) {
-            loadTexture(this.image).then((texture) => {
+    refreshImage(image=null) {
+        image = this.image ?? image;
+        if (this.enabled && image) {
+            loadTexture(image).then((texture) => {
                 this.fogSprite.texture = texture;
             });
         } else {
@@ -137,12 +135,15 @@ export class BackgroundOverlay {
 
     refreshMask() {
         if (!this.enabled) return;
-        const dimensions = canvas.dimensions;
         const graphic = new PIXI.Graphics();
         graphic.beginFill(0xFFFFFF);
-        graphic.drawRect(0, 0, dimensions.width, dimensions.height);
+        graphic.drawRect(0, 0, this.width, this.height);
         graphic.beginFill(0x000000);
 
+        // If not ready, stop now. We only want to cover the screen
+        if (!this._ready) return;
+
+        const dimensions = canvas.dimensions;
         const circleSize = dimensions.size * Math.SQRT2 / 2;
 
         // draw black over the tiles that are revealed

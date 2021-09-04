@@ -8,6 +8,7 @@
     "minimumCoreVersion": "0.8.6",
     "type": "module",
     "esmodules": ["./index.js"],
+    "styles": ["styles/styles.css"],
     "languages": [
         {
             "lang": "en",

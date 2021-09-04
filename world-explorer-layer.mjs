@@ -13,40 +13,48 @@ export class WorldExplorerLayer extends CanvasLayer {
 
         const scene = canvas.scene;
         this.scene = scene;
-        this.color = 0xCCCCCC;
+        this.color = "#000000";
         this.alpha = game.user.isGM ? 0.7 : 1;
         this.state = {};
 
-        const flags = scene.data.flags[MODULE];
+        const flags = scene.data.flags[MODULE] ?? {};
         this._enabled = flags.enabled;
         this.color = flags.color || 0;
         this.image = flags.image;
+        
+        // Create sprite to draw fog of war image over. Because of load delays, create this first
+        // It will get added to the overlay later
+        const dimensions = canvas.dimensions;
+        this.fogSprite = new PIXI.Sprite();
+        this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
+        this.fogSprite.width = dimensions.sceneRect.width;
+        this.fogSprite.height = dimensions.sceneRect.height;
+        this.refreshImage();
     }
 
     initialize() {
         if (this._initialized) return;
         const dimensions = canvas.dimensions;
 
-        // Draw and add the overlay immediately first.
-        this.overlay = new PIXI.Graphics();
+        this.overlayBackground = new PIXI.Graphics();
+        this.overlayBackground.tint = colorStringToHex(this.color) ?? 0x000000;
 
         // Create mask (to punch holes in to reveal tiles/players)
         this.maskTexture = PIXI.RenderTexture.create({
             width: dimensions.width,
             height: dimensions.height,
-        });
-        this.mask = PIXI.Sprite.from(this.maskTexture);
-
-        // Create mask to put players on
-        this.fogSprite = new PIXI.Sprite();
-        this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
-        this.fogSprite.width = dimensions.sceneRect.width;
-        this.fogSprite.height = dimensions.sceneRect.height;
+        })
+        const mask = PIXI.Sprite.from(this.maskTexture);
+        
+        // Create the overlay
+        this.overlay = new PIXI.Graphics();
+        this.overlay.addChild(this.overlayBackground);
         this.overlay.addChild(this.fogSprite);
+        this.overlay.addChild(mask);
+        this.overlay.mask = mask;
 
         this._initialized = true;
-
-        this.refreshImage();
+        this.visible = this._enabled;
     }
 
     /** Canvas ready again. Anything we added to the background must be re-added */
@@ -65,7 +73,6 @@ export class WorldExplorerLayer extends CanvasLayer {
         await super.draw();
         this.initialize();
         this.addChild(this.overlay);
-        this.addChild(this.mask);
         this.refreshOverlay();
         this.refreshMask();
         return this;
@@ -81,6 +88,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         // Setting enabled state will trigger re-renders if necessary
         if (diff) {
             this.enabled = enabled;
+            this.refreshImage();
         } else {
             this.refreshMask();
         }
@@ -92,15 +100,13 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     set enabled(value) {
         this._enabled = value;
+        this.visible = value;
         
         if (value) {
-            this.visible = true;
             this.refreshOverlay();
             this.refreshMask();
         } else {
-            this.visible = false;
             this.overlay.clear();
-            this._resetState();
         }
     }
 
@@ -128,9 +134,10 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     refreshOverlay() {
         if (!this.enabled) return;
-        this.overlay.beginFill(this.color);
-        this.overlay.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
-        this.overlay.endFill();
+        this.overlayBackground.beginFill(0xFFFFFF);
+        this.overlayBackground.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
+        this.overlayBackground.endFill();
+        this.overlayBackground.tint = colorStringToHex(this.color) ?? 0x000000;
     }
 
     refreshMask() {
@@ -138,6 +145,8 @@ export class WorldExplorerLayer extends CanvasLayer {
         const graphic = new PIXI.Graphics();
         graphic.beginFill(0xFFFFFF);
         graphic.drawRect(0, 0, this.width, this.height);
+        graphic.endFill();
+
         graphic.beginFill(0x000000);
 
         // If not ready, stop now. We only want to cover the screen
@@ -153,7 +162,7 @@ export class WorldExplorerLayer extends CanvasLayer {
                 const poly = canvas.grid.grid.getPolygon(x, y);
                 graphic.drawPolygon(poly);
             } else {
-                graphic.drawRectangle(x, y, dimensions.size, dimensions.size);
+                graphic.drawRect(x, y, dimensions.size, dimensions.size);
             }
         }
 
@@ -165,7 +174,9 @@ export class WorldExplorerLayer extends CanvasLayer {
             graphic.drawCircle(x, y, circleSize);
         }
 
+        graphic.endFill();
         canvas.app.renderer.render(graphic, this.maskTexture);
+        graphic.destroy();
     }
 
     isRevealed(x, y) {

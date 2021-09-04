@@ -3,9 +3,12 @@
         "Name": "World Explorer",
         "SceneSettings": {
             "Description": "Configure settings for the World Explorer module",
-            "Enabled": "Enables the module to work for this scene",
+            "Enabled": "Enable the module to work for this scene",
             "Color": "Overlay Color",
             "Image": "Overlay Image"
+        },
+        "Tools": {
+            "Toggle": "Toggle Tiles"
         }
     }
 }

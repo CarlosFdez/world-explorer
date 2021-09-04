@@ -54,3 +54,32 @@ Hooks.on("updateScene", (scene, data) => {
         canvas.worldExplorer?.update(scene);
     }
 });
+
+// Add Controls
+Hooks.on("getSceneControlButtons", (controls) => {
+    if (!game.user.isGM) return;
+
+    controls.push({
+        name: "world-explorer",
+        title: game.i18n.localize("WorldExplorer.Name"),
+        icon: "fas fa-map",
+        layer: "worldExplorer",
+        tools: [
+            {
+                name: "toggle",
+                title: game.i18n.localize("WorldExplorer.Tools.Toggle"),
+                icon: "fas fa-random",
+            },
+        ],
+        activeTool: "toggle",
+    });
+});
+
+// Handle Control Changes
+
+Hooks.on('renderSceneControls', (controls) => {
+    if (!canvas.worldExplorer) return;
+
+    const isExplorer = controls.activeControl === "world-explorer";
+    canvas.worldExplorer.editing = isExplorer && controls.activeTool === "toggle";
+});

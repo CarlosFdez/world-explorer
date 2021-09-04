@@ -208,14 +208,26 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     _registerMouseListeners() {
+        const renderHighlight = (position, revealed) => {
+            const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
+            canvas.grid.clearHighlightLayer("exploration");
+            const color = revealed ? 0xFF0000 : 0x0022FF;
+            canvas.grid.highlightPosition("exploration", { x, y, color, border: 0xFF0000 });
+        };
+
         canvas.stage.addListener('pointerdown', (event) => {
             if (!this.enabled) return;
             
             if (this.editing && event.data.button === 0) {
-                const rawPosition = event.data.getLocalPosition(canvas.app.stage);
-                if (!this.reveal(rawPosition.x, rawPosition.y)) {
-                    this.unreveal(rawPosition.x, rawPosition.y);
+                const position = event.data.getLocalPosition(canvas.app.stage);
+                const revealed = this.isRevealed(position.x, position.y);
+                if (revealed) {
+                    this.unreveal(position.x, position.y);
+                } else {
+                    this.reveal(position.x, position.y)
                 }
+
+                renderHighlight(position, !revealed);
             }
         });
 
@@ -225,10 +237,8 @@ export class WorldExplorerLayer extends CanvasLayer {
             if (this.editing) {
                 // Get mouse position translated to canvas coords
                 const position = event.data.getLocalPosition(canvas.app.stage);
-                const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
-                canvas.grid.clearHighlightLayer("exploration");
-                const color = this.isRevealed(position.x, position.y) ? 0xFF0000 : 0x0022FF;
-                canvas.grid.highlightPosition("exploration", { x, y, color, border: 0xFF0000 });
+                const revealed = this.isRevealed(position.x, position.y)
+                renderHighlight(position, revealed);
             }
         });
     }

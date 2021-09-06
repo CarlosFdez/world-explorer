@@ -181,7 +181,7 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     isRevealed(x, y) {
         const position = canvas.grid.getCenter(x, y).map(Math.round);
-        const existing = this.scene.getFlag(MODULE, "revealed");
+        const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
         const key = makePositionKey(position);
         return existing.some((existing) => makePositionKey(existing) === key);
     }
@@ -191,7 +191,7 @@ export class WorldExplorerLayer extends CanvasLayer {
 
         const position = canvas.grid.getCenter(x, y).map(Math.round);
         if (!this.isRevealed(...position)) {
-            const existing = this.scene.getFlag(MODULE, "revealed");
+            const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
             this.scene.setFlag(MODULE, "revealed", [...existing, position]);
             return true;
         }

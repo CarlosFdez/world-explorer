@@ -2,6 +2,8 @@
 
 GM tool for hexcrawl campaigns that allows displaying a color layer or image over the background layer, while keeping the grid and tile elements visible. Tiles can be removed by the GM to reveal the underlying map on successing scouting or mapping checks. Enable in scene configuration.
 
+Warning: Will likely cause issues if you resize the map after enabling. I'll need to think about how to handle that use case.
+
 ## Player View (Fully Opaque)
 ![image](https://user-images.githubusercontent.com/1286721/132086592-31e6d361-63f7-4f79-b2d4-2aa25345e502.png)
 

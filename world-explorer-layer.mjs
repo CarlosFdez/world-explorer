@@ -157,13 +157,8 @@ export class WorldExplorerLayer extends CanvasLayer {
 
         // draw black over the tiles that are revealed
         for (const position of this.scene.getFlag(MODULE, "revealed") ?? []) {
-            const [x, y] = canvas.grid.getTopLeft(...position);
-            if (canvas.grid.isHex) {
-                const poly = canvas.grid.grid.getPolygon(x, y);
-                graphic.drawPolygon(poly);
-            } else {
-                graphic.drawRect(x, y, dimensions.size, dimensions.size);
-            }
+            const poly = this._getGridPolygon(...position);
+            graphic.drawPolygon(poly);
         }
 
         // draw black over observer tokens
@@ -179,11 +174,26 @@ export class WorldExplorerLayer extends CanvasLayer {
         graphic.destroy();
     }
 
+    _getGridPolygon(positionX, positionY) {
+        const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
+        if (canvas.grid.isHex) {
+            return canvas.grid.grid.getPolygon(x, y);
+        } else {
+            const size = canvas.grid.size;
+            return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
+        }
+    }
+
+    _getIndex(x, y) {
+        const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
+        return allRevealed.findIndex((revealed) => {
+            const polygon = this._getGridPolygon(...revealed);
+            return polygon.contains(x, y);
+        });
+    }
+
     isRevealed(x, y) {
-        const position = canvas.grid.getCenter(x, y).map(Math.round);
-        const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
-        const key = makePositionKey(position);
-        return existing.some((existing) => makePositionKey(existing) === key);
+        return this._getIndex(x, y) > -1;
     }
 
     reveal(x, y) {
@@ -201,10 +211,10 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     unreveal(x, y) {
         if (!this.enabled) return;
-        const position = canvas.grid.getCenter(x, y).map(Math.round);
-        const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
-        const idx = existing.findIndex((existing) => existing[0] === position[0] && existing[1] === position[1]);
-        if (idx >= 0) {
+        
+        const idx = this._getIndex(x, y);
+        if (idx > -1) {
+            const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
             existing.splice(idx, 1);
             this.scene.setFlag(MODULE, "revealed", [...existing]);
             return true;

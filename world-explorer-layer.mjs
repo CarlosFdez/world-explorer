@@ -177,7 +177,7 @@ export class WorldExplorerLayer extends CanvasLayer {
     _getGridPolygon(positionX, positionY) {
         const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
         if (canvas.grid.isHex) {
-            return canvas.grid.grid.getPolygon(x, y);
+            return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
         } else {
             const size = canvas.grid.size;
             return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
@@ -186,9 +186,9 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     _getIndex(x, y) {
         const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
+        const polygon = this._getGridPolygon(x, y);
         return allRevealed.findIndex((revealed) => {
-            const polygon = this._getGridPolygon(...revealed);
-            return polygon.contains(x, y);
+            return polygon.contains(...revealed);
         });
     }
 
@@ -211,7 +211,7 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     unreveal(x, y) {
         if (!this.enabled) return;
-        
+
         const idx = this._getIndex(x, y);
         if (idx > -1) {
             const existing = this.scene.getFlag(MODULE, "revealed") ?? [];

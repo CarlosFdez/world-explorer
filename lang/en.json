@@ -1,11 +1,16 @@
 {
     "WorldExplorer": {
         "Name": "World Explorer",
+        "Settings": {
+        },
         "SceneSettings": {
             "Description": "Configure settings for the World Explorer module",
             "Enabled": "Enable the module to work for this scene",
             "Color": "Overlay Color",
-            "Image": "Overlay Image"
+            "Image": "Overlay Image",
+            "Reveal": "Token Reveal (Distance)",
+            "GM_Opacity": "Game Master Overlay Opacity",
+            "Player_Opacity": "Player Overlay Opacity"
         },
         "Tools": {
             "Toggle": "Toggle Tiles"

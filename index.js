@@ -1,10 +1,10 @@
-import { WorldExplorerLayer } from "./world-explorer-layer.mjs";
+import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
 
 Hooks.on("init", async () => {
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
     SceneConfig.prototype._renderInner = async function(...args) {
         const $html = await defaultSceneConfigRender.apply(this, args);
-        const settings = this.entity.data.flags["world-explorer"];
+        const settings = mergeObject(DEFAULT_SETTINGS, this.entity.data.flags["world-explorer"]);
         const templateName = "modules/world-explorer/templates/scene-settings.html";
         const template = await renderTemplate(templateName, settings);
         $html.find("button[type='submit']").before(template);

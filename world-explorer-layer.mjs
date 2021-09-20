@@ -1,8 +1,11 @@
-function makePositionKey(position) {
-    return `${position[0]}_${position[1]}`;
-}
-
 const MODULE = "world-explorer";
+
+export const DEFAULT_SETTINGS = {
+    color: "#000000",
+    revealRadius: 0,
+    opacityGM: 0.7,
+    opacityPlayer: 1,
+};
 
 export class WorldExplorerLayer extends CanvasLayer {
     _ready = false;
@@ -14,13 +17,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         const scene = canvas.scene;
         this.scene = scene;
         this.color = "#000000";
-        this.alpha = game.user.isGM ? 0.7 : 1;
         this.state = {};
-
-        const flags = scene.data.flags[MODULE] ?? {};
-        this._enabled = flags.enabled;
-        this.color = flags.color || 0;
-        this.image = flags.image;
         
         // Create sprite to draw fog of war image over. Because of load delays, create this first
         // It will get added to the overlay later
@@ -29,7 +26,11 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
         this.fogSprite.width = dimensions.sceneRect.width;
         this.fogSprite.height = dimensions.sceneRect.height;
-        this.refreshImage();
+        this.update(scene);
+    }
+
+    get settings() {
+        return mergeObject(DEFAULT_SETTINGS, this.scene.data.flags[MODULE] ?? {});
     }
 
     initialize() {
@@ -80,17 +81,26 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     update(scene) {
         this.scene = scene;
+        const flags = this.settings;
+        this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
         const { enabled, color, image } = scene.data.flags[MODULE];
         const diff = enabled !== this.enabled || color !== this.color || image !== this.image;
         this.color = color;
         this.image = image;
 
         // Setting enabled state will trigger re-renders if necessary
-        if (diff) {
-            this.enabled = enabled;
-            this.refreshImage();
+        if (this._initialized) {
+            if (diff) {
+                this.enabled = enabled;
+            } else {
+                this.refreshMask();
+            }
         } else {
-            this.refreshMask();
+            this._enabled = enabled;
+        }
+
+        if (diff) {
+            this.refreshImage();
         }
     }
 
@@ -152,9 +162,6 @@ export class WorldExplorerLayer extends CanvasLayer {
         // If not ready, stop now. We only want to cover the screen
         if (!this._ready) return;
 
-        const dimensions = canvas.dimensions;
-        const circleSize = dimensions.size * Math.SQRT2 / 2;
-
         // draw black over the tiles that are revealed
         for (const position of this.scene.getFlag(MODULE, "revealed") ?? []) {
             const poly = this._getGridPolygon(...position);
@@ -162,11 +169,14 @@ export class WorldExplorerLayer extends CanvasLayer {
         }
 
         // draw black over observer tokens
-        for (const token of canvas.tokens.placeables) {
-            if (!token.observer) continue;
-            const x = token.center.x;
-            const y = token.center.y;
-            graphic.drawCircle(x, y, circleSize);
+        const radius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
+        if (radius > 0) {
+            for (const token of canvas.tokens.placeables) {
+                if (!token.observer) continue;
+                const x = token.center.x;
+                const y = token.center.y;
+                graphic.drawCircle(x, y, token.getLightRadius(radius));
+            }
         }
 
         graphic.endFill();
@@ -196,6 +206,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         return this._getIndex(x, y) > -1;
     }
 
+    /** Reveals a coordinate and saves it to the scene */
     reveal(x, y) {
         if (!this.enabled) return;
 
@@ -209,6 +220,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         return false;
     }
 
+    /** Unreveals a coordinate and saves it to the scene */
     unreveal(x, y) {
         if (!this.enabled) return;
 

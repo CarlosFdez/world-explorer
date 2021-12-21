@@ -4,10 +4,16 @@ Hooks.on("init", async () => {
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
     SceneConfig.prototype._renderInner = async function(...args) {
         const $html = await defaultSceneConfigRender.apply(this, args);
-        const settings = mergeObject(DEFAULT_SETTINGS, this.entity.data.flags["world-explorer"]);
+        const settings = mergeObject(DEFAULT_SETTINGS, this.document.data.flags["world-explorer"]);
         const templateName = "modules/world-explorer/templates/scene-settings.html";
         const template = await renderTemplate(templateName, settings);
-        $html.find("button[type='submit']").before(template);
+        
+        const name = game.i18n.localize("WorldExplorer.Name");
+        const header = $(`<a class="item" data-tab="world-explorer"><i class="fa fa-map"></i> ${name}</a>`);
+        $html.find(".sheet-tabs").append(header);
+
+        const $tab = $(`<div class="tab" data-tab="world-explorer"/>`);
+        $html.find("button[type='submit']").before($tab.append(template));
         return $html;
     };
 })

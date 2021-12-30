@@ -9,25 +9,12 @@ export const DEFAULT_SETTINGS = {
 };
 
 export class WorldExplorerLayer extends CanvasLayer {
-    _ready = false;
     _initialized = false;
 
     constructor() {
         super();
-
-        const scene = canvas.scene;
-        this.scene = scene;
         this.color = "#000000";
         this.state = {};
-        
-        // Create sprite to draw fog of war image over. Because of load delays, create this first
-        // It will get added to the overlay later
-        const dimensions = canvas.dimensions;
-        this.fogSprite = new PIXI.Sprite();
-        this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
-        this.fogSprite.width = dimensions.sceneRect.width;
-        this.fogSprite.height = dimensions.sceneRect.height;
-        this.update(scene);
     }
 
     get settings() {
@@ -59,24 +46,33 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.visible = this._enabled;
     }
 
-    /** Canvas ready again. Anything we added to the background must be re-added */
-    ready() {
+    async draw() {
+        const scene = canvas.scene;
+        this.scene = scene;
+        
+        // Create sprite to draw fog of war image over. Because of load delays, create this first
+        // It will get added to the overlay later
+        const dimensions = canvas.dimensions;
+        this.fogSprite = new PIXI.Sprite();
+        this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
+        this.fogSprite.width = dimensions.sceneRect.width;
+        this.fogSprite.height = dimensions.sceneRect.height;
+        this.update(scene);
+
+        await super.draw();
+
         this.initialize();
-        this._ready = true;
+        this.addChild(this.overlay);
+        this.refreshOverlay();
+
         if (this.enabled) {
             this._resetState();
             this.refreshMask();
         }
+        
         canvas.grid.addHighlightLayer("exploration");
         this._registerMouseListeners();
-    }
 
-    async draw() {
-        await super.draw();
-        this.initialize();
-        this.addChild(this.overlay);
-        this.refreshOverlay();
-        this.refreshMask();
         return this;
     }
 
@@ -159,9 +155,6 @@ export class WorldExplorerLayer extends CanvasLayer {
         graphic.endFill();
 
         graphic.beginFill(0x000000);
-
-        // If not ready, stop now. We only want to cover the screen
-        if (!this._ready) return;
 
         // draw black over the tiles that are revealed
         for (const position of this.scene.getFlag(MODULE, "revealed") ?? []) {

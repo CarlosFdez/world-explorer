@@ -1,6 +1,13 @@
 import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
 
 Hooks.on("init", async () => {
+    // Add world explorer layer
+    CONFIG.Canvas.layers["worldExplorer"] = {
+        layerClass: WorldExplorerLayer,
+        group: "primary",
+    };
+
+    // Create scene configuration overrides
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
     SceneConfig.prototype._renderInner = async function(...args) {
         const $html = await defaultSceneConfigRender.apply(this, args);
@@ -16,27 +23,6 @@ Hooks.on("init", async () => {
         $html.find("button[type='submit']").before($tab.append(template));
         return $html;
     };
-})
-
-Hooks.on("canvasInit", () => {
-    canvas.worldExplorer = new WorldExplorerLayer();
-    canvas.stage.addChild(canvas.worldExplorer);
-
-    // Add world explorer layer to be right after the background
-    const canvasLayers = Canvas.layers;
-    const layers = {};
-    for (const [key, value] of Object.entries(canvasLayers)) {
-        layers[key] = value;
-        if (key === "background") {
-            layers.worldExplorer = canvas.worldExplorer;
-        }
-    }
-
-    Object.defineProperty(Canvas, "layers", { get: () => layers });
-});
-
-Hooks.on("canvasReady", () => {
-    canvas.worldExplorer?.ready();
 });
 
 Hooks.on("createToken", (token) => {

@@ -40,13 +40,17 @@ Hooks.on("canvasReady", () => {
 });
 
 Hooks.on("createToken", (token) => {
-    if (token.object?.observer) canvas.worldExplorer?.refreshMask();
+    if (token.object?.observer) {
+        canvas.worldExplorer?.refreshMask();
+        persistRevealedArea(token);
+    }
 });
 
 Hooks.on("updateToken", (token, data) => {
     if (!token.object?.observer) return;
     if (data.x || data.y) {
         canvas.worldExplorer?.refreshMask();
+        persistRevealedArea(token);
     }
 });
 
@@ -91,3 +95,16 @@ Hooks.on('renderSceneControls', (controls) => {
     const isExplorer = controls.activeControl === "world-explorer";
     canvas.worldExplorer.editing = isExplorer && controls.activeTool === "toggle";
 });
+
+function persistRevealedArea(token) {
+    if (!game.user.isGM || !canvas.worldExplorer?.settings.persistExploredAreas) return;
+    
+    // Computing token's center is required to not reveal an area to the token's left upon token's creation.
+    // This happened on "Hexagonal Rows - Odd" grid configuration during token creation. Using center works
+    // on every grid configuration afaik.
+    const center = {
+        x: token.data.x + ((token.parent?.dimensions?.size / 2) ?? 0),
+        y: token.data.y + ((token.parent?.dimensions?.size / 2) ?? 0),
+    };
+    canvas.worldExplorer?.reveal(center.x, center.y);
+}

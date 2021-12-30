@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS = {
     revealRadius: 0,
     opacityGM: 0.7,
     opacityPlayer: 1,
+    persistExploredAreas: false,
 };
 
 export class WorldExplorerLayer extends CanvasLayer {

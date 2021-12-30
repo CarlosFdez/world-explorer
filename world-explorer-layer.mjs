@@ -172,15 +172,11 @@ export class WorldExplorerLayer extends CanvasLayer {
         // draw black over observer tokens
         const radius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
         if (radius > 0) {
-            const persistExploredAreas = game.user.isGM && this.scene.getFlag(MODULE, "persistExploredAreas");
             for (const token of canvas.tokens.placeables) {
                 if (!token.observer) continue;
                 const x = token.center.x;
                 const y = token.center.y;
                 graphic.drawCircle(x, y, token.getLightRadius(radius));
-                if (persistExploredAreas === true) {
-                    this.reveal(x, y);
-                }
             }
         }
 

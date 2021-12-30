@@ -11,7 +11,7 @@
             "Reveal": "Token Reveal (Distance)",
             "GM_Opacity": "Game Master Overlay Opacity",
             "Player_Opacity": "Player Overlay Opacity",
-            "PersistExploredAreas": "Keep areas explored by tokens"
+            "Persist_Explored_Areas": "Keep areas explored by tokens"
         },
         "Tools": {
             "Toggle": "Toggle Tiles"

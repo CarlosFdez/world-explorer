@@ -178,8 +178,7 @@ export class WorldExplorerLayer extends CanvasLayer {
                 const x = token.center.x;
                 const y = token.center.y;
                 graphic.drawCircle(x, y, token.getLightRadius(radius));
-                if (persistExploredAreas === true)
-                {
+                if (persistExploredAreas === true) {
                     this.reveal(x, y);
                 }
             }

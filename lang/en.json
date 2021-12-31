@@ -14,7 +14,12 @@
             "Persist_Explored_Areas": "Keep areas explored by tokens"
         },
         "Tools": {
-            "Toggle": "Toggle Tiles"
+            "Toggle": "Toggle Tiles",
+            "Reset": "Reset Scene"
+        },
+        "ResetDialog": {
+            "Title": "Reset Scene?",
+            "Content": "Reset entire scene to unexplored"
         }
     }
 }

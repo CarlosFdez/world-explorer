@@ -68,6 +68,18 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 title: game.i18n.localize("WorldExplorer.Tools.Toggle"),
                 icon: "fas fa-random",
             },
+            {
+                name: "reset",
+                title: game.i18n.localize("WorldExplorer.Tools.Reset"),
+                icon: "fas fa-trash",
+                onClick: async () => {
+                    const title = game.i18n.localize("WorldExplorer.ResetDialog.Title");
+                    const content = game.i18n.localize("WorldExplorer.ResetDialog.Content");
+                    if (await Dialog.confirm({ title, content })) {
+                        canvas.worldExplorer.clear();
+                    }
+                },
+            }
         ],
         activeTool: "toggle",
     });

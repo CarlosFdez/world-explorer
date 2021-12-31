@@ -175,24 +175,6 @@ export class WorldExplorerLayer extends CanvasLayer {
         graphic.destroy();
     }
 
-    _getGridPolygon(positionX, positionY) {
-        const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
-        if (canvas.grid.isHex) {
-            return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
-        } else {
-            const size = canvas.grid.size;
-            return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
-        }
-    }
-
-    _getIndex(x, y) {
-        const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
-        const polygon = this._getGridPolygon(x, y);
-        return allRevealed.findIndex((revealed) => {
-            return polygon.contains(...revealed);
-        });
-    }
-
     isRevealed(x, y) {
         return this._getIndex(x, y) > -1;
     }
@@ -224,6 +206,29 @@ export class WorldExplorerLayer extends CanvasLayer {
         }
 
         return false;
+    }
+
+    clear() {
+        this.scene.setFlag(MODULE, "revealed", []);
+    }
+
+    /** Gets the grid polygon for a specific real coordinate */
+    _getGridPolygon(positionX, positionY) {
+        const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
+        if (canvas.grid.isHex) {
+            return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
+        } else {
+            const size = canvas.grid.size;
+            return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
+        }
+    }
+
+    _getIndex(x, y) {
+        const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
+        const polygon = this._getGridPolygon(x, y);
+        return allRevealed.findIndex((revealed) => {
+            return polygon.contains(...revealed);
+        });
     }
 
     _resetState() {

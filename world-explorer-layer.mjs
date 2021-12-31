@@ -18,7 +18,8 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     get settings() {
-        return mergeObject(DEFAULT_SETTINGS, this.scene.data.flags[MODULE] ?? {});
+        const settings = this.scene.data.flags[MODULE] ?? {};
+        return { ...DEFAULT_SETTINGS, ...settings };
     }
 
     initialize() {
@@ -42,7 +43,12 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.overlay.mask = mask;
         this.addChild(this.overlay);
 
-        this._initialized = true;
+        const flags = this.settings;
+        this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
+        this.color = flags.color;
+        this.image = flags.image;
+        this._enabled = flags.enabled;
+
         this.visible = this._enabled;
     }
 
@@ -62,38 +68,27 @@ export class WorldExplorerLayer extends CanvasLayer {
         await super.draw();
 
         this.initialize();
-        this.update(scene);
         this.refreshOverlay();
         this._resetState();
         this.refreshMask();
+        this.refreshImage();
         
         canvas.grid.addHighlightLayer("exploration");
-        this._registerMouseListeners();
 
         return this;
     }
 
-    update(scene) {
-        this.scene = scene;
+    update() {
         const flags = this.settings;
+        const imageChanged = this.image !== flags.image;
         this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
-        const { enabled, color, image } = scene.data.flags[MODULE] ?? {};
-        const diff = enabled !== this.enabled || color !== this.color || image !== this.image;
-        this.color = color;
-        this.image = image;
+        this.color = flags.color;
+        this.image = flags.image;
+        this._enabled = flags.enabled;
+        this.visible = this._enabled;
 
-        // Setting enabled state will trigger re-renders if necessary
-        if (this._initialized) {
-            if (diff) {
-                this.enabled = enabled;
-            } else {
-                this.refreshMask();
-            }
-        } else {
-            this._enabled = enabled;
-        }
-
-        if (diff) {
+        this.refreshMask();
+        if (imageChanged || !flags.enabled) {
             this.refreshImage();
         }
     }
@@ -212,31 +207,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.scene.setFlag(MODULE, "revealed", []);
     }
 
-    /** Gets the grid polygon for a specific real coordinate */
-    _getGridPolygon(positionX, positionY) {
-        const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
-        if (canvas.grid.isHex) {
-            return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
-        } else {
-            const size = canvas.grid.size;
-            return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
-        }
-    }
-
-    _getIndex(x, y) {
-        const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
-        const polygon = this._getGridPolygon(x, y);
-        return allRevealed.findIndex((revealed) => {
-            return polygon.contains(...revealed);
-        });
-    }
-
-    _resetState() {
-        this.state = {};
-        this.editing = false;
-    }
-
-    _registerMouseListeners() {
+    registerMouseListeners() {
         const renderHighlight = (position, revealed) => {
             const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
             canvas.grid.clearHighlightLayer("exploration");
@@ -270,5 +241,29 @@ export class WorldExplorerLayer extends CanvasLayer {
                 renderHighlight(position, revealed);
             }
         });
+    }
+
+    /** Gets the grid polygon for a specific real coordinate */
+    _getGridPolygon(positionX, positionY) {
+        const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
+        if (canvas.grid.isHex) {
+            return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
+        } else {
+            const size = canvas.grid.size;
+            return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
+        }
+    }
+
+    _getIndex(x, y) {
+        const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
+        const polygon = this._getGridPolygon(x, y);
+        return allRevealed.findIndex((revealed) => {
+            return polygon.contains(...revealed);
+        });
+    }
+
+    _resetState() {
+        this.state = {};
+        this.editing = false;
     }
 }

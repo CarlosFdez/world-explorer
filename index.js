@@ -11,7 +11,7 @@ Hooks.on("init", async () => {
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
     SceneConfig.prototype._renderInner = async function(...args) {
         const $html = await defaultSceneConfigRender.apply(this, args);
-        const settings = mergeObject(DEFAULT_SETTINGS, this.document.data.flags["world-explorer"]);
+        const settings = { ...DEFAULT_SETTINGS, ...this.document.data.flags["world-explorer"] };
         const templateName = "modules/world-explorer/templates/scene-settings.html";
         const template = await renderTemplate(templateName, settings);
         
@@ -23,6 +23,10 @@ Hooks.on("init", async () => {
         $html.find("button[type='submit']").before($tab.append(template));
         return $html;
     };
+});
+
+Hooks.on("canvasReady", () => {
+    canvas.worldExplorer?.registerMouseListeners();
 });
 
 Hooks.on("createToken", (token) => {
@@ -47,7 +51,7 @@ Hooks.on("deleteToken", () => {
 Hooks.on("updateScene", (scene, data) => {
     if (scene.id !== canvas.scene.id) return;
     if (data.flags && "world-explorer" in data.flags) {
-        canvas.worldExplorer?.update(scene);
+        canvas.worldExplorer?.update();
     }
 });
 

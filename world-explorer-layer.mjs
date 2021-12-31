@@ -22,7 +22,6 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     initialize() {
-        if (this._initialized) return;
         const dimensions = canvas.dimensions;
 
         this.overlayBackground = new PIXI.Graphics();
@@ -41,6 +40,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.overlay.addChild(this.fogSprite);
         this.overlay.addChild(mask);
         this.overlay.mask = mask;
+        this.addChild(this.overlay);
 
         this._initialized = true;
         this.visible = this._enabled;
@@ -57,18 +57,15 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
         this.fogSprite.width = dimensions.sceneRect.width;
         this.fogSprite.height = dimensions.sceneRect.height;
-        this.update(scene);
 
+        // Do not add anything to the layer until after this is called (or it'll be wiped)
         await super.draw();
 
         this.initialize();
-        this.addChild(this.overlay);
+        this.update(scene);
         this.refreshOverlay();
-
-        if (this.enabled) {
-            this._resetState();
-            this.refreshMask();
-        }
+        this._resetState();
+        this.refreshMask();
         
         canvas.grid.addHighlightLayer("exploration");
         this._registerMouseListeners();

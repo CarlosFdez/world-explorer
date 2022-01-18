@@ -9,6 +9,7 @@
             "Color": "Overlay Color",
             "Image": "Overlay Image",
             "Reveal": "Token Reveal (Distance)",
+            "GridReveal": "Grid Tile Extended Reveal (Distance)",
             "GM_Opacity": "Game Master Overlay Opacity",
             "Player_Opacity": "Player Overlay Opacity",
             "Persist_Explored_Areas": "Keep areas explored by tokens"

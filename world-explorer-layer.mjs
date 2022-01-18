@@ -3,6 +3,7 @@ const MODULE = "world-explorer";
 export const DEFAULT_SETTINGS = {
     color: "#000000",
     revealRadius: 0,
+    gridRevealRadius: 0,
     opacityGM: 0.7,
     opacityPlayer: 1,
     persistExploredAreas: false,
@@ -149,9 +150,16 @@ export class WorldExplorerLayer extends CanvasLayer {
         graphic.beginFill(0x000000);
 
         // draw black over the tiles that are revealed
+        const gridComputedRevealRadius = this.getGridRevealRadius(); 
         for (const position of this.scene.getFlag(MODULE, "revealed") ?? []) {
             const poly = this._getGridPolygon(...position);
             graphic.drawPolygon(poly);
+
+            // If we want grid elements to have an extended reveal, we need to draw those too
+            if (gridComputedRevealRadius > 0) {
+                const [x, y] = canvas.grid.getCenter(...position).map(Math.round);
+                graphic.drawCircle(x, y, gridComputedRevealRadius);
+            }
         }
 
         // draw black over observer tokens
@@ -168,6 +176,17 @@ export class WorldExplorerLayer extends CanvasLayer {
         graphic.endFill();
         canvas.app.renderer.render(graphic, this.maskTexture);
         graphic.destroy();
+    }
+
+    /** Returns the grid reveal distance in canvas coordinates (if configured) */
+    getGridRevealRadius() {
+        const gridRadius = Math.max(Number(this.scene.getFlag(MODULE, "gridRevealRadius")) || 0, 0);
+        if (!(gridRadius > 0)) return 0;
+
+        // Convert from units to pixel radius, stolen from token.getLightRadius()
+        const u = Math.abs(gridRadius);
+        const hw = (canvas.grid.w / 2);
+        return (((u / canvas.dimensions.distance) * canvas.dimensions.size) + hw) * Math.sign(gridRadius);
     }
 
     isRevealed(x, y) {

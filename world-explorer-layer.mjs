@@ -82,6 +82,7 @@ export class WorldExplorerLayer extends CanvasLayer {
     update() {
         const flags = this.settings;
         const imageChanged = this.image !== flags.image;
+        const becameEnabled = !this.enabled && flags.enabled;
         this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
         this.color = flags.color;
         this.image = flags.image;
@@ -89,7 +90,10 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.visible = this._enabled;
 
         this.refreshMask();
-        if (imageChanged || !flags.enabled) {
+        if (becameEnabled) {
+            this.refreshOverlay();
+        }
+        if (imageChanged || !flags.enabled || becameEnabled) {
             this.refreshImage();
         }
     }

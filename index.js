@@ -73,6 +73,16 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 icon: "fas fa-random",
             },
             {
+                name: "reveal",
+                title: game.i18n.localize("WorldExplorer.Tools.Reveal"),
+                icon: "fas fa-paint-brush"
+            },
+            {
+                name: "hide",
+                title: game.i18n.localize("WorldExplorer.Tools.Hide"),
+                icon: "fas fa-eraser"
+            },
+            {
                 name: "reset",
                 title: game.i18n.localize("WorldExplorer.Tools.Reset"),
                 icon: "fas fa-trash",
@@ -90,12 +100,16 @@ Hooks.on("getSceneControlButtons", (controls) => {
 });
 
 // Handle Control Changes
-
 Hooks.on('renderSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
     const isExplorer = controls.activeControl === "world-explorer";
-    canvas.worldExplorer.editing = isExplorer && controls.activeTool === "toggle";
+    const isEditTool = ["toggle", "reveal", "hide"].includes(controls.activeTool);
+    if (isEditTool && isExplorer) {
+        canvas.worldExplorer.startEditing(controls.activeTool);
+    } else {
+        canvas.worldExplorer.stopEditing();
+    }
 });
 
 function persistRevealedArea(token) {

@@ -115,10 +115,19 @@ export class WorldExplorerLayer extends CanvasLayer {
         return this.enabled && this.state.clearing;
     }
 
-    set editing(value) {
-        if (!this.enabled) return;
-        this.state.clearing = value;
-        canvas.grid.clearHighlightLayer("exploration");
+    startEditing(mode) {
+        this.state.clearing = true;
+        this.state.tool = mode;
+        if (this.enabled) {
+            canvas.grid.clearHighlightLayer("exploration");
+        }
+    }
+
+    stopEditing() {
+        this.state.clearing = false;
+        if (this.enabled) {
+            canvas.grid.clearHighlightLayer("exploration");
+        }
     }
 
     refreshImage(image=null) {
@@ -227,37 +236,58 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     registerMouseListeners() {
-        const renderHighlight = (position, revealed) => {
+        // Renders the highlight to use for the grid's future status
+        const renderHighlight = (position, reveal) => {
             const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
             canvas.grid.clearHighlightLayer("exploration");
-            const color = revealed ? 0xFF0000 : 0x0022FF;
-            canvas.grid.highlightPosition("exploration", { x, y, color, border: 0xFF0000 });
+            
+            // In certain modes, we only go one way, check if the operation is valid
+            const canReveal = ["toggle", "reveal"].includes(this.state.tool);
+            const canHide = ["toggle", "hide"].includes(this.state.tool);
+            if ((reveal && canReveal) || (!reveal && canHide)) {
+                const color = reveal ? 0x0022FF : 0xFF0000;
+                canvas.grid.highlightPosition("exploration", { x, y, color, border: 0xFF0000 });
+            }
         };
 
         canvas.stage.addListener('pointerdown', (event) => {
             if (!this.enabled) return;
+
+            const canReveal = ["toggle", "reveal"].includes(this.state.tool);
+            const canHide = ["toggle", "hide"].includes(this.state.tool);
             
             if (this.editing && event.data.button === 0) {
                 const position = event.data.getLocalPosition(canvas.app.stage);
                 const revealed = this.isRevealed(position.x, position.y);
-                if (revealed) {
+                if (revealed && canHide) {
                     this.unreveal(position.x, position.y);
-                } else {
+                } else if (!revealed && canReveal) {
                     this.reveal(position.x, position.y)
+                } else {
+                    return;
                 }
 
-                renderHighlight(position, !revealed);
+                renderHighlight(position, revealed);
             }
         });
 
         canvas.stage.addListener('pointermove', (event) => {
-            if (!this.enabled) return;
+            if (!(this.enabled && this.editing)) return;
 
-            if (this.editing) {
-                // Get mouse position translated to canvas coords
+            // Get mouse position translated to canvas coords
+            const position = event.data.getLocalPosition(canvas.app.stage);
+            const revealed = this.isRevealed(position.x, position.y)
+            renderHighlight(position, !revealed);
+
+            // For brush or eraser modes, allow click drag drawing
+            if (event.data.buttons === 1 && this.state.tool !== "toggle") {
                 const position = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(position.x, position.y)
-                renderHighlight(position, revealed);
+                const revealed = this.isRevealed(position.x, position.y);
+                if (revealed && this.state.tool == "hide") {
+                    this.unreveal(position.x, position.y);
+                } else if (!revealed && this.state.tool === "reveal") {
+                    this.reveal(position.x, position.y);
+                }
             }
         });
     }
@@ -282,7 +312,7 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     _resetState() {
+        this.stopEditing();
         this.state = {};
-        this.editing = false;
     }
 }

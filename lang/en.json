@@ -16,6 +16,8 @@
         },
         "Tools": {
             "Toggle": "Toggle Tiles",
+            "Reveal": "Reveal Tiles",
+            "Hide": "Hide Tiles",
             "Reset": "Reset Scene"
         },
         "ResetDialog": {

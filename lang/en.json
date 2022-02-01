@@ -23,6 +23,9 @@
         "ResetDialog": {
             "Title": "Reset Scene?",
             "Content": "Reset entire scene to unexplored"
+        },
+        "Notifications": {
+            "Migrated": "World Explorer | Completed migration for the current scene"
         }
     }
 }

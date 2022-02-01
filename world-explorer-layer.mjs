@@ -51,6 +51,8 @@ export class WorldExplorerLayer extends CanvasLayer {
         this._enabled = flags.enabled;
 
         this.visible = this._enabled;
+
+        this.#migratePositions();
     }
 
     async draw() {
@@ -79,7 +81,12 @@ export class WorldExplorerLayer extends CanvasLayer {
         return this;
     }
 
+    /** Triggered when the current scene update */
     update() {
+        if (this.#migratePositions()) {
+            return;
+        }
+
         const flags = this.settings;
         const imageChanged = this.image !== flags.image;
         const becameEnabled = !this.enabled && flags.enabled;
@@ -164,13 +171,14 @@ export class WorldExplorerLayer extends CanvasLayer {
 
         // draw black over the tiles that are revealed
         const gridComputedRevealRadius = this.getGridRevealRadius(); 
-        for (const position of this.scene.getFlag(MODULE, "revealed") ?? []) {
+        for (const position of this.scene.getFlag(MODULE, "revealedPositions") ?? []) {
             const poly = this._getGridPolygon(...position);
             graphic.drawPolygon(poly);
 
             // If we want grid elements to have an extended reveal, we need to draw those too
             if (gridComputedRevealRadius > 0) {
-                const [x, y] = canvas.grid.getCenter(...position).map(Math.round);
+                const coords = canvas.grid.grid.getPixelsFromGridPosition(...position);
+                const [x, y] = canvas.grid.getCenter(...coords).map(Math.round);
                 graphic.drawCircle(x, y, gridComputedRevealRadius);
             }
         }
@@ -202,6 +210,9 @@ export class WorldExplorerLayer extends CanvasLayer {
         return (((u / canvas.dimensions.distance) * canvas.dimensions.size) + hw) * Math.sign(gridRadius);
     }
 
+    /**
+     * Returns true if a grid coordinate (x, y) is revealed
+     */
     isRevealed(x, y) {
         return this._getIndex(x, y) > -1;
     }
@@ -209,11 +220,11 @@ export class WorldExplorerLayer extends CanvasLayer {
     /** Reveals a coordinate and saves it to the scene */
     reveal(x, y) {
         if (!this.enabled) return;
-
-        const position = canvas.grid.getCenter(x, y).map(Math.round);
-        if (!this.isRevealed(...position)) {
-            const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
-            this.scene.setFlag(MODULE, "revealed", [...existing, position]);
+        if (!this.isRevealed(x, y)) {
+            const position = canvas.grid.grid.getGridPositionFromPixels(x, y);
+            const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
+            existing.push(position);
+            this.scene.setFlag(MODULE, "revealedPositions", [...existing]);
             return true;
         }
         
@@ -223,12 +234,11 @@ export class WorldExplorerLayer extends CanvasLayer {
     /** Unreveals a coordinate and saves it to the scene */
     unreveal(x, y) {
         if (!this.enabled) return;
-
         const idx = this._getIndex(x, y);
         if (idx > -1) {
-            const existing = this.scene.getFlag(MODULE, "revealed") ?? [];
+            const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
             existing.splice(idx, 1);
-            this.scene.setFlag(MODULE, "revealed", [...existing]);
+            this.scene.setFlag(MODULE, "revealedPositions", [...existing]);
             return true;
         }
 
@@ -236,7 +246,7 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     clear() {
-        this.scene.setFlag(MODULE, "revealed", []);
+        this.scene.setFlag(MODULE, "revealedPositions", []);
     }
 
     registerMouseListeners() {
@@ -261,17 +271,17 @@ export class WorldExplorerLayer extends CanvasLayer {
             const canHide = ["toggle", "hide"].includes(this.state.tool);
             
             if (this.editing && event.data.button === 0) {
-                const position = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(position.x, position.y);
+                const coords = event.data.getLocalPosition(canvas.app.stage);
+                const revealed = this.isRevealed(coords.x, coords.y);
                 if (revealed && canHide) {
-                    this.unreveal(position.x, position.y);
+                    this.unreveal(coords.x, coords.y);
                 } else if (!revealed && canReveal) {
-                    this.reveal(position.x, position.y)
+                    this.reveal(coords.x, coords.y)
                 } else {
                     return;
                 }
 
-                renderHighlight(position, revealed);
+                renderHighlight(coords, revealed);
             }
         });
 
@@ -279,26 +289,28 @@ export class WorldExplorerLayer extends CanvasLayer {
             if (!(this.enabled && this.editing)) return;
 
             // Get mouse position translated to canvas coords
-            const position = event.data.getLocalPosition(canvas.app.stage);
-            const revealed = this.isRevealed(position.x, position.y)
-            renderHighlight(position, !revealed);
+            const coords = event.data.getLocalPosition(canvas.app.stage);
+            const revealed = this.isRevealed(coords.x, coords.y)
+            renderHighlight(coords, !revealed);
 
             // For brush or eraser modes, allow click drag drawing
             if (event.data.buttons === 1 && this.state.tool !== "toggle") {
-                const position = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(position.x, position.y);
+                const coords = event.data.getLocalPosition(canvas.app.stage);
+                const revealed = this.isRevealed(coords.x, coords.y);
                 if (revealed && this.state.tool == "hide") {
-                    this.unreveal(position.x, position.y);
+                    this.unreveal(coords.x, coords.y);
                 } else if (!revealed && this.state.tool === "reveal") {
-                    this.reveal(position.x, position.y);
+                    this.reveal(coords.x, coords.y);
                 }
             }
         });
     }
 
-    /** Gets the grid polygon for a specific real coordinate */
-    _getGridPolygon(positionX, positionY) {
-        const [x, y] = canvas.grid.getTopLeft(positionX, positionY);
+    /**
+     * Gets the grid polygon from a grid position (row and column)
+     */
+    _getGridPolygon(row, column) {
+        const [x, y] = canvas.grid.grid.getPixelsFromGridPosition(row, column);
         if (canvas.grid.isHex) {
             return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
         } else {
@@ -308,15 +320,30 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     _getIndex(x, y) {
-        const allRevealed = this.scene.getFlag(MODULE, "revealed") ?? [];
-        const polygon = this._getGridPolygon(x, y);
-        return allRevealed.findIndex((revealed) => {
-            return polygon.contains(...revealed);
-        });
+        const allRevealed = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
+        const [row, col] = canvas.grid.grid.getGridPositionFromPixels(x, y);
+        return allRevealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
     }
 
     _resetState() {
         this.stopEditing();
         this.state = {};
+    }
+
+    /** Attempt to migrate from older positions to newer positions. */
+    #migratePositions() {
+        const flags = this.settings;
+        if ("revealed" in flags) {
+            const newRevealed = flags.revealed.map((position) => canvas.grid.grid.getGridPositionFromPixels(...position));
+            canvas.scene.data.flags["world-explorer"].revealed = null;
+            this.scene.update({
+                "flags.world-explorer.revealedPositions": newRevealed,
+                "flags.world-explorer.-=revealed": null,
+            });
+            ui.notifications.info(game.i18n.localize("WorldExplorer.Notifications.Migrated"));
+            return true;
+        }
+
+        return false;
     }
 }

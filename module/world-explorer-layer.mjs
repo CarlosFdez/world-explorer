@@ -9,6 +9,28 @@ export const DEFAULT_SETTINGS = {
     persistExploredAreas: false,
 };
 
+function relativeAdjust(value, reference) {
+    if (value < reference) {
+        return Math.floor(value);
+    } else {
+        return Math.ceil(value);
+    }
+}
+
+/** Some polygons may have fractional parts, we round outwards so they tile nicely */
+function expandPolygon(polygon, center) {
+    for (const idx in polygon.points) {
+        const value = polygon.points[idx];
+        if (idx % 2 === 0) {
+            polygon.points[idx] = relativeAdjust(value, center[0]);
+        } else {
+            polygon.points[idx] = relativeAdjust(value, center[1]);
+        }
+    }
+
+    return polygon;
+}
+
 export class WorldExplorerLayer extends CanvasLayer {
     _initialized = false;
 
@@ -312,7 +334,9 @@ export class WorldExplorerLayer extends CanvasLayer {
     _getGridPolygon(row, column) {
         const [x, y] = canvas.grid.grid.getPixelsFromGridPosition(row, column);
         if (canvas.grid.isHex) {
-            return new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
+            const center = canvas.grid.grid.getCenter(x, y);
+            const hexPolygon = new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
+            return expandPolygon(hexPolygon, center);
         } else {
             const size = canvas.grid.size;
             return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);

@@ -153,7 +153,7 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     refreshOverlay() {
-        if (!this.enabled) return;
+        if (!this.enabled || this.alpha === 0) return;
         this.overlayBackground.beginFill(0xFFFFFF);
         this.overlayBackground.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
         this.overlayBackground.endFill();
@@ -161,7 +161,7 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     refreshMask() {
-        if (!this.enabled) return;
+        if (!this.enabled || this.alpha === 0) return;
         const graphic = new PIXI.Graphics();
         graphic.beginFill(0xFFFFFF);
         graphic.drawRect(0, 0, this.width, this.height);

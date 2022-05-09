@@ -1,4 +1,5 @@
-import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
+import { OpacityGMAdjuster } from "./module/opacity-slider.mjs";
+import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./module/world-explorer-layer.mjs";
 
 Hooks.on("init", async () => {
     // Add world explorer layer
@@ -83,6 +84,16 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 icon: "fas fa-eraser"
             },
             {
+                name: "opacity",
+                title: game.i18n.localize("WorldExplorer.Tools.Opacity"),
+                icon: "fas fa-lightbulb",
+                toggle: true,
+                onClick: () => {
+                    const adjuster = OpacityGMAdjuster.instance;
+                    adjuster.toggleVisibility();
+                },
+            },
+            {
                 name: "reset",
                 title: game.i18n.localize("WorldExplorer.Tools.Reset"),
                 icon: "fas fa-trash",
@@ -110,6 +121,8 @@ Hooks.on('renderSceneControls', (controls) => {
     } else {
         canvas.worldExplorer.stopEditing();
     }
+
+    OpacityGMAdjuster.instance?.detectClose(controls);
 });
 
 function persistRevealedArea(token) {

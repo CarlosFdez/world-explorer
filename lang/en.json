@@ -18,6 +18,7 @@
             "Toggle": "Toggle Tiles",
             "Reveal": "Reveal Tiles",
             "Hide": "Hide Tiles",
+            "Opacity": "Game Master Overlay Opacity",
             "Reset": "Reset Scene"
         },
         "ResetDialog": {

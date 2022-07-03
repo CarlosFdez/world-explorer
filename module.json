@@ -3,7 +3,7 @@
     "title": "World Explorer",
     "description": "Manual reveal of background image for map traversal tracking",
     "author": "Supe",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "compatibleCoreVersion": "9",
     "minimumCoreVersion": "9",
     "type": "module",
@@ -23,5 +23,5 @@
     "styles": ["styles/style.css"],
     "url": "https://github.com/CarlosFdez/world-explorer",
     "manifest": "https://github.com/CarlosFdez/world-explorer/releases/latest/download/module.json",
-    "download": "https://github.com/CarlosFdez/world-explorer/releases/download/v0.6.1/module.zip"
+    "download": "https://github.com/CarlosFdez/world-explorer/releases/download/v0.6.2/module.zip"
 }

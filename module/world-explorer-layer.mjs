@@ -12,9 +12,10 @@ export const DEFAULT_SETTINGS = {
 function relativeAdjust(value, reference) {
     if (value < reference) {
         return Math.floor(value);
-    } else {
+    } else if (value > reference) {
         return Math.ceil(value);
     }
+    return value;
 }
 
 /** Some polygons may have fractional parts, we round outwards so they tile nicely */
@@ -334,9 +335,14 @@ export class WorldExplorerLayer extends CanvasLayer {
     _getGridPolygon(row, column) {
         const [x, y] = canvas.grid.grid.getPixelsFromGridPosition(row, column);
         if (canvas.grid.isHex) {
+            // Hexes are vulnerable to roundoff errors, which can create thin gaps between cells.
+            // We shift the center to a whole number, shift the polygon, then expand the polygon to whole number coords
+            // Shifting the center allows us to handle Hexagonal Column configurations when expanded
             const center = canvas.grid.grid.getCenter(x, y);
+            const delta = center.map(v => Math.round(v) - v);
             const hexPolygon = new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
-            return expandPolygon(hexPolygon, center);
+            hexPolygon.points = hexPolygon.points.map((v, idx) => v + delta[idx % 2]);
+            return expandPolygon(hexPolygon, center.map(Math.round));
         } else {
             const size = canvas.grid.size;
             return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);

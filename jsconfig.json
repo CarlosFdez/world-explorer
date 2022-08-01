@@ -1,0 +1,7 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "types": ["@league-of-foundry-developers/foundry-vtt-types"],
+        "moduleResolution": "node"
+    }
+}

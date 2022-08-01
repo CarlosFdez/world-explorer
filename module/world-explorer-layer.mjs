@@ -38,9 +38,12 @@ export class WorldExplorerLayer extends CanvasLayer {
     constructor() {
         super();
         this.color = "#000000";
+
+        /** @type {Partial<WorldExplorerState>} */
         this.state = {};
     }
 
+    /** @returns {WorldExplorerFlags} */
     get settings() {
         const settings = this.scene.data.flags[MODULE] ?? {};
         return { ...DEFAULT_SETTINGS, ...settings };
@@ -149,6 +152,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         return this.enabled && this.state.clearing;
     }
 
+    /** @param {EditingMode} mode */
     startEditing(mode) {
         this.state.clearing = true;
         this.state.tool = mode;
@@ -234,15 +238,21 @@ export class WorldExplorerLayer extends CanvasLayer {
     }
 
     /**
-     * Returns true if a grid coordinate (x, y) is revealed
+     * Returns true if a grid coordinate (x, y) is revealed.
+     * @param {PointArray[]} position
      */
-    isRevealed(x, y) {
-        return this._getIndex(x, y) > -1;
+    isRevealed(...position) {
+        return this._getIndex(...position) > -1;
     }
 
-    /** Reveals a coordinate and saves it to the scene */
-    reveal(x, y) {
+    /** 
+     * Reveals a coordinate and saves it to the scene
+     * @param {PointArray[]} position
+     */
+    reveal(...position) {
         if (!this.enabled) return;
+
+        const [x, y] = position;
         if (!this.isRevealed(x, y)) {
             const position = canvas.grid.grid.getGridPositionFromPixels(x, y);
             const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
@@ -349,9 +359,10 @@ export class WorldExplorerLayer extends CanvasLayer {
         }
     }
 
-    _getIndex(x, y) {
+    /** @param {PointArray[]} point */
+    _getIndex(...point) {
         const allRevealed = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
-        const [row, col] = canvas.grid.grid.getGridPositionFromPixels(x, y);
+        const [row, col] = canvas.grid.grid.getGridPositionFromPixels(...point);
         return allRevealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
     }
 
@@ -360,7 +371,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.state = {};
     }
 
-    /** Attempt to migrate from older positions to newer positions. */
+    /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */
     #migratePositions() {
         const flags = this.settings;
         if ("revealed" in flags) {

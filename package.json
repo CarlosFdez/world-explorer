@@ -1,0 +1,24 @@
+{
+  "name": "world-explorer",
+  "version": "1.0.0",
+  "description": "GM tool for hexcrawl campaigns that allows displaying a color layer or image over the background layer, while keeping the grid and tile elements visible. Tiles can be removed by the GM to reveal the underlying map on successing scouting or mapping checks. Enable in scene configuration.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CarlosFdez/world-explorer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CarlosFdez/world-explorer/issues"
+  },
+  "homepage": "https://github.com/CarlosFdez/world-explorer#readme",
+  "devDependencies": {
+    "@league-of-foundry-developers/foundry-vtt-types": "^9.269.0",
+    "pixi.js": "^6.2.2",
+    "typescript": "^4.7.4"
+  }
+}

@@ -32,9 +32,7 @@ function expandPolygon(polygon, center) {
     return polygon;
 }
 
-export class WorldExplorerLayer extends CanvasLayer {
-    _initialized = false;
-
+export class WorldExplorerLayer extends InteractionLayer {
     constructor() {
         super();
         this.color = "#000000";
@@ -45,15 +43,23 @@ export class WorldExplorerLayer extends CanvasLayer {
 
     /** @returns {WorldExplorerFlags} */
     get settings() {
-        const settings = this.scene.data.flags[MODULE] ?? {};
+        const settings = this.scene.flags[MODULE] ?? {};
         return { ...DEFAULT_SETTINGS, ...settings };
+    }
+
+    /**
+     * Get a GridHighlight layer for this Ruler
+     * @type {GridHighlight}
+     */
+    get highlightLayer() {
+        return canvas.grid.highlightLayers[this.name] || canvas.grid.addHighlightLayer(this.name);
     }
 
     initialize() {
         const dimensions = canvas.dimensions;
 
         this.overlayBackground = new PIXI.Graphics();
-        this.overlayBackground.tint = colorStringToHex(this.color) ?? 0x000000;
+        this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
         // Create mask (to punch holes in to reveal tiles/players)
         this.maskTexture = PIXI.RenderTexture.create({
@@ -81,7 +87,7 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.#migratePositions();
     }
 
-    async draw() {
+    async _draw() {
         const scene = canvas.scene;
         this.scene = scene;
         
@@ -93,16 +99,11 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.fogSprite.width = dimensions.sceneRect.width;
         this.fogSprite.height = dimensions.sceneRect.height;
 
-        // Do not add anything to the layer until after this is called (or it'll be wiped)
-        await super.draw();
-
+        this.state = {};
         this.initialize();
         this.refreshOverlay();
-        this._resetState();
-        this.refreshMask();
+        //this.refreshMask();
         this.refreshImage();
-        
-        canvas.grid.addHighlightLayer("exploration");
 
         return this;
     }
@@ -131,6 +132,16 @@ export class WorldExplorerLayer extends CanvasLayer {
         }
     }
 
+    activate() {
+        super.activate();
+        // todo: figure out interaction layer
+    }
+
+    deactivate() {
+        super.deactivate();
+        // todo: figure out interaction layer
+    }
+
     get enabled() {
         return !!this._enabled;
     }
@@ -157,14 +168,14 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.state.clearing = true;
         this.state.tool = mode;
         if (this.enabled) {
-            canvas.grid.clearHighlightLayer("exploration");
+            this.highlightLayer.clear();
         }
     }
 
     stopEditing() {
         this.state.clearing = false;
         if (this.enabled) {
-            canvas.grid.clearHighlightLayer("exploration");
+            this.highlightLayer.clear();
         }
     }
 
@@ -184,7 +195,15 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.overlayBackground.beginFill(0xFFFFFF);
         this.overlayBackground.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
         this.overlayBackground.endFill();
-        this.overlayBackground.tint = colorStringToHex(this.color) ?? 0x000000;
+        this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
+    }
+
+    _clearMask() {
+        if (!this.enabled || this.alpha === 0) return;
+        const graphic = new PIXI.Graphics();
+        graphic.beginFill(0xFFFFFF);
+        graphic.drawRect(0, 0, this.width, this.height);
+        graphic.endFill();
     }
 
     refreshMask() {
@@ -282,18 +301,23 @@ export class WorldExplorerLayer extends CanvasLayer {
         this.scene.setFlag(MODULE, "revealedPositions", []);
     }
 
+    onCanvasReady() {
+        this.refreshMask();
+        this.registerMouseListeners();
+    }
+
     registerMouseListeners() {
         // Renders the highlight to use for the grid's future status
         const renderHighlight = (position, reveal) => {
             const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
-            canvas.grid.clearHighlightLayer("exploration");
+            this.highlightLayer.clear();
             
             // In certain modes, we only go one way, check if the operation is valid
             const canReveal = ["toggle", "reveal"].includes(this.state.tool);
             const canHide = ["toggle", "hide"].includes(this.state.tool);
             if ((reveal && canReveal) || (!reveal && canHide)) {
                 const color = reveal ? 0x0022FF : 0xFF0000;
-                canvas.grid.highlightPosition("exploration", { x, y, color, border: 0xFF0000 });
+                canvas.grid.grid.highlightGridPosition(this.highlightLayer, { x, y, color, border: 0xFF0000 });
             }
         };
 
@@ -366,17 +390,12 @@ export class WorldExplorerLayer extends CanvasLayer {
         return allRevealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
     }
 
-    _resetState() {
-        this.stopEditing();
-        this.state = {};
-    }
-
     /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */
     #migratePositions() {
         const flags = this.settings;
         if ("revealed" in flags) {
             const newRevealed = flags.revealed.map((position) => canvas.grid.grid.getGridPositionFromPixels(...position));
-            canvas.scene.data.flags["world-explorer"].revealed = null;
+            canvas.scene.flags["world-explorer"].revealed = null;
             this.scene.update({
                 "flags.world-explorer.revealedPositions": newRevealed,
                 "flags.world-explorer.-=revealed": null,

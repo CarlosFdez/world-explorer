@@ -27,7 +27,7 @@ Hooks.on("init", async () => {
 });
 
 Hooks.on("canvasReady", () => {
-    canvas.worldExplorer?.registerMouseListeners();
+    canvas.worldExplorer?.onCanvasReady();
 });
 
 Hooks.on("createToken", (token) => {

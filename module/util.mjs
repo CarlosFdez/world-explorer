@@ -23,3 +23,38 @@ export function insertIntoObject(object, options) {
 
     return result;
 }
+
+function relativeAdjust(value, reference) {
+    if (value < reference) {
+        return Math.floor(value);
+    } else if (value > reference) {
+        return Math.ceil(value);
+    }
+    return value;
+}
+
+/** Some polygons may have fractional parts, we round outwards so they tile nicely */
+export function expandPolygon(polygon, center) {
+    for (const idx in polygon.points) {
+        const value = polygon.points[idx];
+        if (idx % 2 === 0) {
+            polygon.points[idx] = relativeAdjust(value, center[0]);
+        } else {
+            polygon.points[idx] = relativeAdjust(value, center[1]);
+        }
+    }
+
+    return polygon;
+}
+
+export function translatePolygon(polygon, translate) {
+    for (const idx of polygon.points) {
+        if (idx % 2 === 0) {
+            polygon.points[idx] += translate[0];
+        } else {
+            polygon.points[idx] += translate[1];
+        }
+    }
+
+    return polygon;
+}

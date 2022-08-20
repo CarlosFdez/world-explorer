@@ -1,3 +1,5 @@
+import { expandPolygon, translatePolygon } from "./util.mjs";
+
 const MODULE = "world-explorer";
 
 export const DEFAULT_SETTINGS = {
@@ -8,29 +10,6 @@ export const DEFAULT_SETTINGS = {
     opacityPlayer: 1,
     persistExploredAreas: false,
 };
-
-function relativeAdjust(value, reference) {
-    if (value < reference) {
-        return Math.floor(value);
-    } else if (value > reference) {
-        return Math.ceil(value);
-    }
-    return value;
-}
-
-/** Some polygons may have fractional parts, we round outwards so they tile nicely */
-function expandPolygon(polygon, center) {
-    for (const idx in polygon.points) {
-        const value = polygon.points[idx];
-        if (idx % 2 === 0) {
-            polygon.points[idx] = relativeAdjust(value, center[0]);
-        } else {
-            polygon.points[idx] = relativeAdjust(value, center[1]);
-        }
-    }
-
-    return polygon;
-}
 
 export class WorldExplorerLayer extends InteractionLayer {
     constructor() {
@@ -55,6 +34,10 @@ export class WorldExplorerLayer extends InteractionLayer {
         return canvas.grid.highlightLayers[this.name] || canvas.grid.addHighlightLayer(this.name);
     }
 
+    get revealed() {
+        return this.scene.getFlag(MODULE, "revealedPositions") ?? [];
+    }
+
     initialize() {
         const dimensions = canvas.dimensions;
 
@@ -63,10 +46,11 @@ export class WorldExplorerLayer extends InteractionLayer {
 
         // Create mask (to punch holes in to reveal tiles/players)
         this.maskTexture = PIXI.RenderTexture.create({
-            width: dimensions.width,
-            height: dimensions.height,
+            width: dimensions.sceneRect.width,
+            height: dimensions.sceneRect.height,
         })
         const mask = PIXI.Sprite.from(this.maskTexture);
+        mask.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
         
         // Create the overlay
         this.overlay = new PIXI.Graphics();
@@ -102,7 +86,6 @@ export class WorldExplorerLayer extends InteractionLayer {
         this.state = {};
         this.initialize();
         this.refreshOverlay();
-        //this.refreshMask();
         this.refreshImage();
 
         return this;
@@ -210,13 +193,13 @@ export class WorldExplorerLayer extends InteractionLayer {
         if (!this.enabled || this.alpha === 0) return;
         const graphic = new PIXI.Graphics();
         graphic.beginFill(0xFFFFFF);
-        graphic.drawRect(0, 0, this.width, this.height);
+        graphic.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
         graphic.endFill();
 
         graphic.beginFill(0x000000);
 
         // draw black over the tiles that are revealed
-        const gridComputedRevealRadius = this.getGridRevealRadius(); 
+        const gridComputedRevealRadius = this.getGridRevealRadius();
         for (const position of this.scene.getFlag(MODULE, "revealedPositions") ?? []) {
             const poly = this._getGridPolygon(...position);
             graphic.drawPolygon(poly);
@@ -239,6 +222,9 @@ export class WorldExplorerLayer extends InteractionLayer {
                 graphic.drawCircle(x, y, token.getLightRadius(radius));
             }
         }
+
+        const translate = [-canvas.dimensions.sceneRect.x, -canvas.dimensions.sceneRect.y];
+        graphic.position.set(...translate);
 
         graphic.endFill();
         canvas.app.renderer.render(graphic, this.maskTexture);
@@ -364,7 +350,7 @@ export class WorldExplorerLayer extends InteractionLayer {
     }
 
     /**
-     * Gets the grid polygon from a grid position (row and column)
+     * Gets the grid polygon from a grid position (row and column).
      */
     _getGridPolygon(row, column) {
         const [x, y] = canvas.grid.grid.getPixelsFromGridPosition(row, column);
@@ -385,9 +371,8 @@ export class WorldExplorerLayer extends InteractionLayer {
 
     /** @param {PointArray[]} point */
     _getIndex(...point) {
-        const allRevealed = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
         const [row, col] = canvas.grid.grid.getGridPositionFromPixels(...point);
-        return allRevealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
+        return this.revealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
     }
 
     /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */

@@ -58,9 +58,7 @@ Hooks.on("updateScene", (scene, data) => {
 
 // Add Controls
 Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.user.isGM) return;
-    // note: trying to check the active scene to early exit will prevent activeTool from functioning
-    // Find another way to "disable" the scene control buttons
+    if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
 
     controls.push({
         name: "world-explorer",

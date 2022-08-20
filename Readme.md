@@ -1,6 +1,6 @@
 # World Explorer
 
-GM tool for hexcrawl campaigns that allows displaying a color layer or image over the background layer, while keeping the grid and tile elements visible. Tiles can be removed by the GM to reveal the underlying map on successing scouting or mapping checks. Enable in scene configuration.
+GM tool for hexcrawl campaigns that allows displaying a second manual fog of war (with color or image) only over the background layer, while keeping the grid, tokens, and tiles visible. Grid tiles can be removed manually by the GM to reveal the underlying map on successing scouting or mapping checks. Enable in scene configuration.
 
 If you're feeling generous, you can send something through [Paypal](https://paypal.me/carlosfernandez1779?locale.x=en_US) if you want.
 

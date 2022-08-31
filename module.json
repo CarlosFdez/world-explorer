@@ -1,8 +1,17 @@
 {
-  "name": "world-explorer",
+  "id": "world-explorer",
   "title": "World Explorer",
   "description": "Manual reveal of background image for map traversal tracking",
-  "version": "0.7.1",
+  "version": "0.7.2",
+  "authors": [
+    {
+      "name": "Supe"
+    }
+  ],
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10.283"
+  },
   "esmodules": [
     "index.js"
   ],
@@ -10,14 +19,12 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json",
-      "flags": {}
+      "path": "lang/en.json"
     },
     {
       "lang": "ja",
       "name": "日本語",
-      "path": "lang/ja.json",
-      "flags": {}
+      "path": "lang/ja.json"
     }
   ],
   "styles": [
@@ -25,16 +32,5 @@
   ],
   "url": "https://github.com/CarlosFdez/world-explorer",
   "manifest": "https://github.com/CarlosFdez/world-explorer/releases/latest/download/module.json",
-  "download": "https://github.com/CarlosFdez/world-explorer/releases/download/v0.7.1/module.zip",
-  "authors": [
-    {
-      "name": "Supe",
-      "flags": {}
-    }
-  ],
-  "compatibility": {
-    "minimum": "10",
-    "maximum": "10",
-    "verified": "10.278"
-  }
+  "download": "https://github.com/CarlosFdez/world-explorer/releases/download/v0.7.2/module.zip"
 }

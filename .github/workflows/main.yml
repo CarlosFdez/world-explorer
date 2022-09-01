@@ -19,7 +19,7 @@ jobs:
       # create a zip file with all files required by the module to add to the release
       - name: Zip Files
         working-directory: ./
-        run: zip -r ./module.zip ./index.js ./templates/* ./lang/* ./module/* ./styles/* ./templates/*
+        run: zip -r ./module.zip ./module.json ./index.js ./templates/* ./lang/* ./module/* ./styles/* ./templates/*
 
       # Get the version from 'module.json'
       - name: Get Version

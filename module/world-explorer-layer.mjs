@@ -12,6 +12,15 @@ export const DEFAULT_SETTINGS = {
 };
 
 export class WorldExplorerLayer extends InteractionLayer {
+    /**
+     * Providing baseClass for proper 'name' support
+     * @see InteractionLayer
+     */
+    static get layerOptions() {
+      return Object.assign(super.layerOptions, {
+        baseClass: WorldExplorerLayer,
+      });
+    }
     constructor() {
         super();
         this.color = "#000000";
@@ -40,25 +49,17 @@ export class WorldExplorerLayer extends InteractionLayer {
 
     initialize() {
         const dimensions = canvas.dimensions;
-
         this.overlayBackground = new PIXI.Graphics();
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
         // Create mask (to punch holes in to reveal tiles/players)
-        this.maskTexture = PIXI.RenderTexture.create({
-            width: dimensions.sceneRect.width,
-            height: dimensions.sceneRect.height,
-        })
-        const mask = PIXI.Sprite.from(this.maskTexture);
-        mask.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
+        this.maskSprite = new PIXI.Sprite();
         
         // Create the overlay
-        this.overlay = new PIXI.Graphics();
-        this.overlay.addChild(this.overlayBackground);
-        this.overlay.addChild(this.fogSprite);
-        this.overlay.addChild(mask);
-        this.overlay.mask = mask;
-        this.addChild(this.overlay);
+        this.addChild(this.overlayBackground);
+        this.addChild(this.fogSprite);
+        this.addChild(this.maskSprite);
+        this.mask = this.maskSprite;
 
         const flags = this.settings;
         this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
@@ -137,7 +138,7 @@ export class WorldExplorerLayer extends InteractionLayer {
             this.refreshOverlay();
             this.refreshMask();
         } else {
-            this.overlay.clear();
+            this.removeChildren()
         }
     }
 
@@ -181,14 +182,6 @@ export class WorldExplorerLayer extends InteractionLayer {
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
     }
 
-    _clearMask() {
-        if (!this.enabled || this.alpha === 0) return;
-        const graphic = new PIXI.Graphics();
-        graphic.beginFill(0xFFFFFF);
-        graphic.drawRect(0, 0, this.width, this.height);
-        graphic.endFill();
-    }
-
     refreshMask() {
         if (!this.enabled || this.alpha === 0) return;
         const graphic = new PIXI.Graphics();
@@ -223,11 +216,8 @@ export class WorldExplorerLayer extends InteractionLayer {
             }
         }
 
-        const translate = [-canvas.dimensions.sceneRect.x, -canvas.dimensions.sceneRect.y];
-        graphic.position.set(...translate);
-
         graphic.endFill();
-        canvas.app.renderer.render(graphic, this.maskTexture);
+        this.maskSprite.texture = canvas.app.renderer.generateTexture(graphic);
         graphic.destroy();
     }
 

@@ -48,7 +48,6 @@ export class WorldExplorerLayer extends InteractionLayer {
     }
 
     initialize() {
-        const dimensions = canvas.dimensions;
         this.overlayBackground = new PIXI.Graphics();
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
@@ -285,8 +284,27 @@ export class WorldExplorerLayer extends InteractionLayer {
         return false;
     }
 
-    clear() {
-        this.scene.setFlag(MODULE, "revealedPositions", []);
+    /** Clears the entire scene. If reveal: true is passed, reveals all positions instead */
+    clear(options) {
+        const reveal = options?.reveal ?? false;
+        if (reveal) {
+            // Add a reveal for every grid position. If this is a hex grid, we also need to mark negative positions by one.
+            const d = canvas.dimensions;
+            const dimensions = canvas.grid.grid.getGridPositionFromPixels(d.width - 1, d.height - 1);
+            if (canvas.grid.isHex) {
+                dimensions[0] += 1;
+                dimensions[1] += 1;
+            }
+            const newPositions = [];
+            for (let row = 0; row < dimensions[0]; row++) {
+                for (let col = 0; col < dimensions[1]; col++) {
+                    newPositions.push([row, col]);
+                }
+            }
+            this.scene.setFlag(MODULE, "revealedPositions", newPositions);
+        } else {
+            this.scene.setFlag(MODULE, "revealedPositions", []);
+        }
     }
 
     onCanvasReady() {

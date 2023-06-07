@@ -96,11 +96,42 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 title: game.i18n.localize("WorldExplorer.Tools.Reset"),
                 icon: "fas fa-trash",
                 onClick: async () => {
-                    const title = game.i18n.localize("WorldExplorer.ResetDialog.Title");
-                    const content = game.i18n.localize("WorldExplorer.ResetDialog.Content");
-                    if (await Dialog.confirm({ title, content })) {
-                        canvas.worldExplorer.clear();
-                    }
+                    const code = randomID(4).toLowerCase();
+                    const content = `
+                        <p>${game.i18n.localize("WorldExplorer.ResetDialog.Content")}</p>
+                        <p>${game.i18n.format("WorldExplorer.ResetDialog.Confirm", { code })}</p>
+                        <p><input type="text"/></p>
+                    `;
+
+                    new Dialog({
+                        title: game.i18n.localize("WorldExplorer.ResetDialog.Title"),
+                        content,
+                        buttons: {
+                            unexplored: {
+                                icon: '<i class="fa-solid fa-user-secret"></i>',
+                                label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Unexplored"),
+                                callback: () => canvas.worldExplorer.clear(),
+                            },
+                            explored: {
+                                icon: '<i class="fa-solid fa-eye"></i>',
+                                label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Explored"),
+                                callback: () => canvas.worldExplorer.clear({ reveal: true }),
+                            },
+                            cancel: {
+                                icon: '<i class="fa-solid fa-times"></i>',
+                                label: game.i18n.localize("Cancel"),
+                            },
+                        },
+                        render: ($html) => {
+                            const $codeInput = $html.find("input");
+                            const $buttons = $html.find("button");
+                            $buttons.prop("disabled", true);
+                            $codeInput.on("input", () => {
+                                const matches = $codeInput.val().trim() === code; 
+                                $buttons.prop("disabled", !matches);
+                            })
+                        },
+                    }).render(true);
                 },
             }
         ],

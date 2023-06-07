@@ -23,7 +23,12 @@
         },
         "ResetDialog": {
             "Title": "Reset Scene?",
-            "Content": "Reset entire scene to unexplored"
+            "Content": "Are you sure you want to reset and update the entire scene?",
+            "Confirm": "Type this exact code in the box below in order to proceed: <strong>{code}</strong>",
+            "Choices": {
+                "Explored": "Show All",
+                "Unexplored": "Hide All"
+            }
         },
         "Notifications": {
             "Migrated": "World Explorer | Completed migration for the current scene"

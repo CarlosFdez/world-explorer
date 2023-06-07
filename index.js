@@ -53,6 +53,11 @@ Hooks.on("updateScene", (scene, data) => {
     if (scene.id !== canvas.scene.id) return;
     if (data.flags && "world-explorer" in data.flags) {
         canvas.worldExplorer?.update();
+
+        // If the Z-Index has changed, re-evaluate children
+        if (data.flags["world-explorer"].zIndex) {
+            canvas.primary.sortChildren();
+        }
     }
 });
 

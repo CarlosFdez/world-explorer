@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS = {
     opacityGM: 0.7,
     opacityPlayer: 1,
     persistExploredAreas: false,
+    zIndex: 101,
 };
 
 export class WorldExplorerLayer extends InteractionLayer {
@@ -17,16 +18,27 @@ export class WorldExplorerLayer extends InteractionLayer {
      * @see InteractionLayer
      */
     static get layerOptions() {
-      return Object.assign(super.layerOptions, {
-        baseClass: WorldExplorerLayer,
-      });
+        return {
+            ...super.layerOptions,
+            name: "worldExplorer",
+            baseClass: WorldExplorerLayer,
+        };
     }
+
     constructor() {
         super();
         this.color = "#000000";
 
         /** @type {Partial<WorldExplorerState>} */
         this.state = {};
+    }
+
+    /** 
+     * Controls the sorting position of world explorer relative to other layers.
+     * Tiles by default have a z-indez of 100. 
+     */
+    get sort() {
+        return this.settings.zIndex ?? 101;
     }
 
     /** @returns {WorldExplorerFlags} */

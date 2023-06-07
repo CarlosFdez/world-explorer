@@ -10,6 +10,7 @@ interface WorldExplorerFlags {
     image?: string;
     enabled?: boolean;
     revealedPositions?: [number, number][];
+    zIndex: number;
 }
 
 interface WorldExplorerState {

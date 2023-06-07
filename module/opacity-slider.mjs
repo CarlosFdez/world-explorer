@@ -30,7 +30,7 @@ export class OpacityGMAdjuster extends Application {
     }
 
     getData() {
-        const flags = this.scene.data.flags["world-explorer"] ?? {};
+        const flags = this.scene.flags["world-explorer"] ?? {};
         return {
             opacityGM: flags.opacityGM ?? DEFAULT_SETTINGS.opacityGM,
         };

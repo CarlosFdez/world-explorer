@@ -12,7 +12,9 @@
             "GridReveal": "Grid Tile Extended Reveal (Distance)",
             "GM_Opacity": "Game Master Overlay Opacity",
             "Player_Opacity": "Player Overlay Opacity",
-            "Persist_Explored_Areas": "Keep areas explored by tokens"
+            "Persist_Explored_Areas": "Keep areas explored by tokens",
+            "ZIndex": "Overlay Z-Index",
+            "ZIndexHint": "Sort order to compare to tile Z-Indexes. Bigger is closer."
         },
         "Tools": {
             "Toggle": "Toggle Tiles",

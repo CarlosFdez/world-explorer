@@ -191,33 +191,45 @@ export class WorldExplorerLayer extends InteractionLayer {
 
         graphic.beginFill(0x000000);
 
+        // Needed to offset a growing graphic that was drown to negative indices (hex maps)
+        const minCoords = [0, 0];
+
         // draw black over the tiles that are revealed
-        const gridComputedRevealRadius = this.getGridRevealRadius();
+        const gridRevealRadius = this.getGridRevealRadius();
         for (const position of this.scene.getFlag(MODULE, "revealedPositions") ?? []) {
             const poly = this._getGridPolygon(...position);
             graphic.drawPolygon(poly);
 
+            // Update min coordinates. Even values are X values, and odd values are Y values
+            minCoords[0] = Math.min(minCoords[0], ...poly.points.filter((_, idx) => idx % 2 === 0));
+            minCoords[1] = Math.min(minCoords[1], ...poly.points.filter((_, idx) => idx % 2 !== 0));
+
             // If we want grid elements to have an extended reveal, we need to draw those too
-            if (gridComputedRevealRadius > 0) {
+            if (gridRevealRadius > 0) {
                 const coords = canvas.grid.grid.getPixelsFromGridPosition(...position);
                 const [x, y] = canvas.grid.getCenter(...coords).map(Math.round);
-                graphic.drawCircle(x, y, gridComputedRevealRadius);
+                graphic.drawCircle(x, y, gridRevealRadius);
+                minCoords[0] = Math.min(minCoords[0], x - gridRevealRadius);
+                minCoords[1] = Math.min(minCoords[1], y - gridRevealRadius);
             }
         }
 
         // draw black over observer tokens
-        const radius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
-        if (radius > 0) {
+        const tokenrevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
+        if (tokenrevealRadius > 0) {
             for (const token of canvas.tokens.placeables) {
                 if (!token.observer) continue;
                 const x = token.center.x;
                 const y = token.center.y;
-                graphic.drawCircle(x, y, token.getLightRadius(radius));
+                graphic.drawCircle(x, y, token.getLightRadius(tokenrevealRadius));
+                minCoords[0] = Math.min(minCoords[0], x - tokenrevealRadius);
+                minCoords[1] = Math.min(minCoords[1], y - tokenrevealRadius);
             }
         }
 
         graphic.endFill();
         this.maskSprite.texture = canvas.app.renderer.generateTexture(graphic);
+        this.maskSprite.position.set(...minCoords);
         graphic.destroy();
     }
 

@@ -12,7 +12,7 @@ Hooks.on("init", async () => {
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
     SceneConfig.prototype._renderInner = async function(...args) {
         const $html = await defaultSceneConfigRender.apply(this, args);
-        const settings = { ...DEFAULT_SETTINGS, ...this.document.data.flags["world-explorer"] };
+        const settings = { ...DEFAULT_SETTINGS, ...this.document.flags["world-explorer"] };
         const templateName = "modules/world-explorer/templates/scene-settings.html";
         const template = await renderTemplate(templateName, settings);
         

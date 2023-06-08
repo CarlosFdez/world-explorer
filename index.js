@@ -160,14 +160,16 @@ Hooks.on('renderSceneControls', (controls) => {
 });
 
 function persistRevealedArea(token) {
-    if (!game.user.isGM || !canvas.worldExplorer?.settings.persistExploredAreas) return;
+    if (!game.user.isGM || !canvas.worldExplorer?.enabled || !canvas.worldExplorer?.settings.persistExploredAreas) {
+        return;
+    }
     
     // Computing token's center is required to not reveal an area to the token's left upon token's creation.
     // This happened on "Hexagonal Rows - Odd" grid configuration during token creation. Using center works
     // on every grid configuration afaik.
     const center = {
-        x: token.data.x + ((token.parent?.dimensions?.size / 2) ?? 0),
-        y: token.data.y + ((token.parent?.dimensions?.size / 2) ?? 0),
+        x: token.x + ((token.parent?.dimensions?.size / 2) ?? 0),
+        y: token.y + ((token.parent?.dimensions?.size / 2) ?? 0),
     };
     canvas.worldExplorer?.reveal(center.x, center.y);
 }

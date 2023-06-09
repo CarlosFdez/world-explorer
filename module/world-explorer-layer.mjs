@@ -64,7 +64,13 @@ export class WorldExplorerLayer extends InteractionLayer {
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
         // Create mask (to punch holes in to reveal tiles/players)
+        const dimensions = canvas.dimensions;
+        this.maskTexture = PIXI.RenderTexture.create({
+            width: dimensions.sceneRect.width,
+            height: dimensions.sceneRect.height,
+        })
         this.maskSprite = new PIXI.Sprite();
+        this.maskSprite.texture = this.maskTexture;
         
         // Create the overlay
         this.addChild(this.overlayBackground);
@@ -202,26 +208,17 @@ export class WorldExplorerLayer extends InteractionLayer {
 
         graphic.beginFill(0x000000);
 
-        // Needed to offset a growing graphic that was drown to negative indices (hex maps)
-        const minCoords = [0, 0];
-
         // draw black over the tiles that are revealed
         const gridRevealRadius = this.getGridRevealRadius();
         for (const position of this.scene.getFlag(MODULE, "revealedPositions") ?? []) {
             const poly = this._getGridPolygon(...position);
             graphic.drawPolygon(poly);
 
-            // Update min coordinates. Even values are X values, and odd values are Y values
-            minCoords[0] = Math.min(minCoords[0], ...poly.points.filter((_, idx) => idx % 2 === 0));
-            minCoords[1] = Math.min(minCoords[1], ...poly.points.filter((_, idx) => idx % 2 !== 0));
-
             // If we want grid elements to have an extended reveal, we need to draw those too
             if (gridRevealRadius > 0) {
                 const coords = canvas.grid.grid.getPixelsFromGridPosition(...position);
                 const [x, y] = canvas.grid.getCenter(...coords).map(Math.round);
                 graphic.drawCircle(x, y, gridRevealRadius);
-                minCoords[0] = Math.min(minCoords[0], x - gridRevealRadius);
-                minCoords[1] = Math.min(minCoords[1], y - gridRevealRadius);
             }
         }
 
@@ -233,15 +230,15 @@ export class WorldExplorerLayer extends InteractionLayer {
                 const x = token.center.x;
                 const y = token.center.y;
                 graphic.drawCircle(x, y, token.getLightRadius(tokenrevealRadius));
-                minCoords[0] = Math.min(minCoords[0], x - tokenrevealRadius);
-                minCoords[1] = Math.min(minCoords[1], y - tokenrevealRadius);
             }
         }
 
+        const { sceneRect } = canvas.dimensions;
+        graphic.position.set(-sceneRect.x, -sceneRect.y);
+        
         graphic.endFill();
-        this.maskSprite.texture?.destroy();
-        this.maskSprite.texture = canvas.app.renderer.generateTexture(graphic);
-        this.maskSprite.position.set(...minCoords);
+        canvas.app.renderer.render(graphic, { renderTexture: this.maskTexture });
+        this.maskSprite.position.set(sceneRect.x, sceneRect.y);
         graphic.destroy();
     }
 

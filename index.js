@@ -32,16 +32,14 @@ Hooks.on("canvasReady", () => {
 
 Hooks.on("createToken", (token) => {
     if (token.object?.observer) {
-        canvas.worldExplorer?.refreshMask();
-        persistRevealedArea(token);
+        updateForToken(token);
     }
 });
 
 Hooks.on("updateToken", (token, data) => {
     if (!token.object?.observer) return;
     if (data.x || data.y) {
-        canvas.worldExplorer?.refreshMask();
-        persistRevealedArea(token);
+        updateForToken(token);
     }
 });
 
@@ -159,17 +157,20 @@ Hooks.on('renderSceneControls', (controls) => {
     OpacityGMAdjuster.instance?.detectClose(controls);
 });
 
-function persistRevealedArea(token) {
-    if (!game.user.isGM || !canvas.worldExplorer?.enabled || !canvas.worldExplorer?.settings.persistExploredAreas) {
-        return;
+/** Refreshes the scene on token move, revealing a location if necessary */
+function updateForToken(token) {
+    if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
+
+    if (canvas.worldExplorer.settings.persistExploredAreas) {
+        // Computing token's center is required to not reveal an area to the token's left upon token's creation.
+        // This happened on "Hexagonal Rows - Odd" grid configuration during token creation. Using center works
+        // on every grid configuration afaik.
+        const center = {
+            x: token.x + ((token.parent?.dimensions?.size / 2) ?? 0),
+            y: token.y + ((token.parent?.dimensions?.size / 2) ?? 0),
+        };
+        canvas.worldExplorer.reveal(center.x, center.y);
+    } else {
+        canvas.worldExplorer.refreshMask();
     }
-    
-    // Computing token's center is required to not reveal an area to the token's left upon token's creation.
-    // This happened on "Hexagonal Rows - Odd" grid configuration during token creation. Using center works
-    // on every grid configuration afaik.
-    const center = {
-        x: token.x + ((token.parent?.dimensions?.size / 2) ?? 0),
-        y: token.y + ((token.parent?.dimensions?.size / 2) ?? 0),
-    };
-    canvas.worldExplorer?.reveal(center.x, center.y);
 }

@@ -239,6 +239,7 @@ export class WorldExplorerLayer extends InteractionLayer {
         }
 
         graphic.endFill();
+        this.maskSprite.texture?.destroy();
         this.maskSprite.texture = canvas.app.renderer.generateTexture(graphic);
         this.maskSprite.position.set(...minCoords);
         graphic.destroy();

@@ -1,3 +1,4 @@
+import { SceneUpdater } from "./scene-updater.mjs";
 import { expandPolygon, translatePolygon } from "./util.mjs";
 
 const MODULE = "world-explorer";
@@ -92,6 +93,7 @@ export class WorldExplorerLayer extends InteractionLayer {
     async _draw() {
         const scene = canvas.scene;
         this.scene = scene;
+        this.updater = new SceneUpdater(scene);
         
         // Create sprite to draw fog of war image over. Because of load delays, create this first
         // It will get added to the overlay later
@@ -265,56 +267,20 @@ export class WorldExplorerLayer extends InteractionLayer {
      * Reveals a coordinate and saves it to the scene
      * @param {PointArray[]} position
      */
-    reveal(...position) {
+    reveal(x, y) {
         if (!this.enabled) return;
-
-        const [x, y] = position;
-        if (!this.isRevealed(x, y)) {
-            const position = canvas.grid.grid.getGridPositionFromPixels(x, y);
-            const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
-            existing.push(position);
-            this.scene.setFlag(MODULE, "revealedPositions", [...existing]);
-            return true;
-        }
-        
-        return false;
+        this.updater.reveal(x, y);
     }
 
     /** Unreveals a coordinate and saves it to the scene */
     unreveal(x, y) {
         if (!this.enabled) return;
-        const idx = this._getIndex(x, y);
-        if (idx > -1) {
-            const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
-            existing.splice(idx, 1);
-            this.scene.setFlag(MODULE, "revealedPositions", [...existing]);
-            return true;
-        }
-
-        return false;
+        this.updater.hide(x, y);
     }
 
     /** Clears the entire scene. If reveal: true is passed, reveals all positions instead */
     clear(options) {
-        const reveal = options?.reveal ?? false;
-        if (reveal) {
-            // Add a reveal for every grid position. If this is a hex grid, we also need to mark negative positions by one.
-            const d = canvas.dimensions;
-            const dimensions = canvas.grid.grid.getGridPositionFromPixels(d.width - 1, d.height - 1);
-            if (canvas.grid.isHex) {
-                dimensions[0] += 1;
-                dimensions[1] += 1;
-            }
-            const newPositions = [];
-            for (let row = 0; row < dimensions[0]; row++) {
-                for (let col = 0; col < dimensions[1]; col++) {
-                    newPositions.push([row, col]);
-                }
-            }
-            this.scene.setFlag(MODULE, "revealedPositions", newPositions);
-        } else {
-            this.scene.setFlag(MODULE, "revealedPositions", []);
-        }
+        this.updater.clear(options);
     }
 
     onCanvasReady() {

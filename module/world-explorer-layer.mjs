@@ -1,5 +1,6 @@
 import { SceneUpdater } from "./scene-updater.mjs";
 import { expandPolygon, translatePolygon } from "./util.mjs";
+import { getGridPositionFromPixels } from "./polygon-utils.mjs";
 
 const MODULE = "world-explorer";
 
@@ -291,7 +292,8 @@ export class WorldExplorerLayer extends InteractionLayer {
     registerMouseListeners() {
         // Renders the highlight to use for the grid's future status
         const renderHighlight = (position, reveal) => {
-            const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
+            const gridPosition = getGridPositionFromPixels(position.x, position.y);
+            const [x, y] = canvas.grid.grid.getPixelsFromGridPosition(gridPosition[0], gridPosition[1]);
             this.highlightLayer.clear();
             
             // In certain modes, we only go one way, check if the operation is valid
@@ -367,7 +369,7 @@ export class WorldExplorerLayer extends InteractionLayer {
 
     /** @param {PointArray[]} point */
     _getIndex(...point) {
-        const [row, col] = canvas.grid.grid.getGridPositionFromPixels(...point);
+        const [row, col] = getGridPositionFromPixels(...point);
         return this.revealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
     }
 
@@ -375,7 +377,7 @@ export class WorldExplorerLayer extends InteractionLayer {
     #migratePositions() {
         const flags = this.settings;
         if ("revealed" in flags) {
-            const newRevealed = flags.revealed.map((position) => canvas.grid.grid.getGridPositionFromPixels(...position));
+            const newRevealed = flags.revealed.map((position) => getGridPositionFromPixels(...position));
             canvas.scene.flags["world-explorer"].revealed = null;
             this.scene.update({
                 "flags.world-explorer.revealedPositions": newRevealed,

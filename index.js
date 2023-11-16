@@ -48,13 +48,20 @@ Hooks.on("deleteToken", () => {
 });
 
 Hooks.on("updateScene", (scene, data) => {
+    // Skip if the updated scene isn't the current one
     if (scene.id !== canvas.scene.id) return;
+    
     if (data.flags && "world-explorer" in data.flags) {
         canvas.worldExplorer?.update();
 
         // If the Z-Index has changed, re-evaluate children
         if (data.flags["world-explorer"].zIndex) {
             canvas.primary.sortChildren();
+        }
+
+        // Handle side-controls not re-rendering when the world explorer mode changes
+        if ("enabled" in data.flags["world-explorer"]) {
+            ui.controls.initialize();
         }
     }
 });

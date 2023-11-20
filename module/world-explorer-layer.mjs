@@ -73,6 +73,27 @@ export class WorldExplorerLayer extends InteractionLayer {
         return this.scene.getFlag(MODULE, "revealedPositions") ?? [];
     }
 
+    get enabled() {
+        return !!this._enabled;
+    }
+
+    set enabled(value) {
+        this._enabled = !!value;
+        this.visible = !!value;
+        
+        if (value) {
+            this.refreshOverlay();
+            this.refreshMask();
+        } else {
+            this.removeChildren()
+        }
+    }
+
+    /** Returns true if the user is currently editing, false otherwise. */
+    get editing() {
+        return this.enabled && this.state.clearing;
+    }
+
     initialize() {
         this.overlayBackground = new PIXI.Graphics();
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
@@ -148,35 +169,15 @@ export class WorldExplorerLayer extends InteractionLayer {
         }
     }
 
+    // Work around foundry bug https://github.com/foundryvtt/foundryvtt/issues/10201
     activate() {
-        super.activate();
-        // todo: figure out interaction layer
-    }
-
-    deactivate() {
-        super.deactivate();
-        // todo: figure out interaction layer
-    }
-
-    get enabled() {
-        return !!this._enabled;
-    }
-
-    set enabled(value) {
-        this._enabled = !!value;
-        this.visible = !!value;
-        
-        if (value) {
-            this.refreshOverlay();
-            this.refreshMask();
-        } else {
-            this.removeChildren()
+        if (!this.enabled) {
+            const control = ui.controls.controls[0];
+            ui.controls.initialize({ layer: control.layer });
+            return this.deactivate();
         }
-    }
 
-    /** Returns true if the user is currently editing, false otherwise. */
-    get editing() {
-        return this.enabled && this.state.clearing;
+        return super.activate();
     }
 
     /** @param {EditingMode} mode */

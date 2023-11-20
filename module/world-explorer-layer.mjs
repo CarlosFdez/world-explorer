@@ -225,13 +225,13 @@ export class WorldExplorerLayer extends InteractionLayer {
         }
 
         // draw black over observer tokens
-        const tokenrevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
-        if (tokenrevealRadius > 0) {
+        const tokenRevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
+        if (tokenRevealRadius > 0) {
             for (const token of canvas.tokens.placeables) {
                 if (!token.observer) continue;
                 const x = token.center.x;
                 const y = token.center.y;
-                graphic.drawCircle(x, y, token.getLightRadius(tokenrevealRadius));
+                graphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
             }
         }
 

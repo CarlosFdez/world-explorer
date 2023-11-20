@@ -31,13 +31,10 @@ Hooks.on("canvasReady", () => {
 });
 
 Hooks.on("createToken", (token) => {
-    if (token.object?.observer) {
-        updateForToken(token);
-    }
+    updateForToken(token);
 });
 
 Hooks.on("updateToken", (token, data) => {
-    if (!token.object?.observer) return;
     if (data.x || data.y) {
         updateForToken(token);
     }
@@ -167,6 +164,11 @@ Hooks.on('renderSceneControls', (controls) => {
 /** Refreshes the scene on token move, revealing a location if necessary */
 function updateForToken(token) {
     if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
+
+    // Only do token reveals for player owned or player friendly tokens
+    if (token.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY && !token.hasPlayerToken) {
+        return;
+    }
 
     if (canvas.worldExplorer.settings.persistExploredAreas) {
         // Computing token's center is required to not reveal an area to the token's left upon token's creation.

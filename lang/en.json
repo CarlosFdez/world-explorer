@@ -13,8 +13,13 @@
             "GM_Opacity": "Game Master Overlay Opacity",
             "Player_Opacity": "Player Overlay Opacity",
             "Persist_Explored_Areas": "Keep areas explored by tokens",
-            "ZIndex": "Overlay Z-Index",
-            "ZIndexHint": "Sort order to compare to tile Z-Indexes. Bigger is closer."
+            "Position": "Overlay Position",
+            "PositionHint": "Whether it should display below tiles and textures or above.",
+            "PositionOption": {
+                "back": "Behind drawings, tokens, and tiles",
+                "behindTokens": "Behind tokens and overhead tiles",
+                "front": "Cover everything (except grid)"
+            }
         },
         "Tools": {
             "Toggle": "Toggle Tiles",

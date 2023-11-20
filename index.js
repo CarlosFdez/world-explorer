@@ -52,7 +52,7 @@ Hooks.on("updateScene", (scene, data) => {
         canvas.worldExplorer?.update();
 
         // If the Z-Index has changed, re-evaluate children
-        if (data.flags["world-explorer"].zIndex) {
+        if (data.flags["world-explorer"].position) {
             canvas.primary.sortChildren();
         }
 

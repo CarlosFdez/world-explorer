@@ -10,9 +10,20 @@ export const DEFAULT_SETTINGS = {
     opacityGM: 0.7,
     opacityPlayer: 1,
     persistExploredAreas: false,
-    zIndex: 101,
+    position: "back",
 };
 
+// DEV NOTE: On sorting layers
+// Elements within the primary canvas group are sorted via the following heuristics:
+// 1. The object's elevation property. Drawables use their ZIndex, Tiles have a fixed value if overhead
+// 2. The layer's static PRIMARY_SORT_ORDER.
+// 3. The object's sort property
+
+/** 
+ * The world explorer canvas layer, which is added to the primary canvas layer.
+ * The primary canvas layer is host to the background, and the actual token/drawing/tile sprites.
+ * The separate token/drawing/tiles layers in the interaction layer are specifically for drawing borders and rendering the hud.
+ */
 export class WorldExplorerLayer extends InteractionLayer {
     /**
      * Providing baseClass for proper 'name' support
@@ -26,6 +37,12 @@ export class WorldExplorerLayer extends InteractionLayer {
         };
     }
 
+    static get PRIMARY_SORT_ORDER() {
+        // Tokens are 750, Drawings are 500
+        const position = canvas.worldExplorer?.settings.position
+        return position === "front" ? 1000 : position === "behindTokens" ? 700 : 0;
+    }
+
     constructor() {
         super();
         this.color = "#000000";
@@ -34,18 +51,14 @@ export class WorldExplorerLayer extends InteractionLayer {
         this.state = {};
     }
 
-    /** 
-     * Controls the sorting position of world explorer relative to other layers.
-     * Tiles by default have a z-indez of 100. 
-     */
-    get sort() {
-        return this.settings.zIndex ?? 101;
-    }
-
     /** @returns {WorldExplorerFlags} */
     get settings() {
         const settings = this.scene.flags[MODULE] ?? {};
         return { ...DEFAULT_SETTINGS, ...settings };
+    }
+
+    get elevation() {
+        return this.settings.position === "front" ? Infinity : 0;
     }
 
     /**

@@ -26,11 +26,17 @@
 <hr/>
 
 <div class="form-group">
-    <label>{{localize "WorldExplorer.SceneSettings.ZIndex"}}</label>
+    <label>{{localize "WorldExplorer.SceneSettings.Position"}}</label>
     <div class="form-fields">
-        <input type="text" name="flags.world-explorer.zIndex" value="{{zIndex}}">
+        <select name="flags.world-explorer.position">
+            {{#select position}}
+                <option value="back">{{localize "WorldExplorer.SceneSettings.PositionOption.back"}}</option>
+                <option value="behindTokens">{{localize "WorldExplorer.SceneSettings.PositionOption.behindTokens"}}</option>
+                <option value="front">{{localize "WorldExplorer.SceneSettings.PositionOption.front"}}</option>
+            {{/select}}
+        </select>
     </div>
-    <p class="notes">{{localize "WorldExplorer.SceneSettings.ZIndexHint"}}</p>
+    <p class="notes">{{localize "WorldExplorer.SceneSettings.PositionHint"}}</p>
 </div>
 <div class="form-group">
     <label>{{localize "WorldExplorer.SceneSettings.Reveal"}}</label>

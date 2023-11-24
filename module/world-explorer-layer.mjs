@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS = {
     opacityGM: 0.7,
     opacityPlayer: 1,
     persistExploredAreas: false,
-    position: "back",
+    position: "behindTokens",
 };
 
 // DEV NOTE: On sorting layers

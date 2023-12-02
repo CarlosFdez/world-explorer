@@ -16,9 +16,10 @@
             "Position": "Overlay Position",
             "PositionHint": "Whether it should display below tiles and textures or above.",
             "PositionOption": {
-                "back": "Behind drawings, tokens, and tiles",
-                "behindTokens": "Behind tokens and overhead tiles",
-                "front": "Cover everything (except grid)"
+                "back": "Cover the map only",
+                "behindDrawings": "Cover the map and non-overhead tiles",
+                "behindTokens": "Cover the map, non-overhead tiles, and drawings",
+                "front": "Cover everything except grid"
             }
         },
         "Tools": {

@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS = {
     opacityGM: 0.7,
     opacityPlayer: 1,
     persistExploredAreas: false,
-    position: "behindTokens",
+    position: "behindDrawings",
 };
 
 // DEV NOTE: On sorting layers
@@ -40,7 +40,7 @@ export class WorldExplorerLayer extends InteractionLayer {
     static get PRIMARY_SORT_ORDER() {
         // Tokens are 750, Drawings are 500
         const position = canvas.worldExplorer?.settings.position
-        return position === "front" ? 1000 : position === "behindTokens" ? 700 : 0;
+        return position === "front" ? 1000 : position === "behindTokens" ? 700 : position === "behindDrawings" ? 250 : 0;
     }
 
     constructor() {

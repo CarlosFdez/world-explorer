@@ -242,10 +242,12 @@ export class WorldExplorerLayer extends InteractionLayer {
         const tokenRevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
         if (tokenRevealRadius > 0) {
             for (const token of canvas.tokens.placeables) {
-                if (!token.observer) continue;
-                const x = token.center.x;
-                const y = token.center.y;
-                graphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
+                const document = token.document;
+                if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
+                    const x = token.center.x;
+                    const y = token.center.y;
+                    graphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
+                }
             }
         }
 

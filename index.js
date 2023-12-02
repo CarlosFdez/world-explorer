@@ -166,7 +166,7 @@ function updateForToken(token) {
     if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
 
     // Only do token reveals for player owned or player friendly tokens
-    if (token.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY && !token.hasPlayerToken) {
+    if (token.disposition !== CONST.TOKEN_DISPOSITIONS.FRIENDLY && !token.hasPlayerOwner) {
         return;
     }
 

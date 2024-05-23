@@ -59,20 +59,6 @@ export function translatePolygon(polygon, translate) {
     return polygon;
 }
 
-/** From https://github.com/you-dont-need/You-Dont-Need-Lodash-Underscore#_throttle */
-export function debounceTrailing(func, timeFrame) {
-    let timeout = null;
-    return function (...args) {
-        const now = new Date();
-        if (!timeout) {
-            timeout = setTimeout(() => {
-                func(...args)
-                timeout = null;
-            }, now + timeFrame);
-        }
-    };
-}
-
 export function uniqBy(arr, fn) {
     const seen = new Set();
     return arr.reduce((result, entry) => {

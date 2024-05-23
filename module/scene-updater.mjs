@@ -1,4 +1,4 @@
-import { debounceTrailing, uniq } from "./util.mjs";
+import { uniq } from "./util.mjs";
 
 const MODULE = "world-explorer";
 
@@ -55,7 +55,7 @@ export class SceneUpdater {
         }
     }
 
-    #performUpdates = debounceTrailing(async () => {
+    #performUpdates = foundry.utils.throttle(async () => {
         if (this.updating) return;
 
         const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];

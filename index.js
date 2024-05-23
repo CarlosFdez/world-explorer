@@ -43,16 +43,29 @@ Hooks.on("canvasReady", () => {
 
 Hooks.on("createToken", (token) => {
     updateForToken(token);
+    if (canvas.worldExplorer?.settings.revealRadius) {
+        canvas.worldExplorer.refreshMask();
+    }
 });
 
 Hooks.on("updateToken", (token, data) => {
     if (data.x || data.y) {
-        updateForToken(token);
+        setTimeout(() => {
+            updateForToken(token, data);
+        }, 100);
+    }
+});
+
+Hooks.on("refreshToken", (token, options) => {
+    if (options.refreshPosition) {
+        refreshThrottled();
     }
 });
 
 Hooks.on("deleteToken", () => {
-    canvas.worldExplorer?.refreshMask();
+    if (canvas.worldExplorer?.settings.revealRadius) {
+        canvas.worldExplorer.refreshMask();
+    }
 });
 
 Hooks.on("updateScene", (scene, data) => {
@@ -60,15 +73,23 @@ Hooks.on("updateScene", (scene, data) => {
     if (scene.id !== canvas.scene.id) return;
     
     if (data.flags && "world-explorer" in data.flags) {
-        canvas.worldExplorer?.update();
+        const worldExplorerFlags = data.flags["world-explorer"];
+
+        // If the only change was revealed positions, do the throttled refresh to not interfere with token moving
+        if (worldExplorerFlags.revealedPositions && Object.keys(worldExplorerFlags).length === 1) {
+            refreshThrottled();
+        } else {
+            canvas.worldExplorer?.update();
+        }
 
         // If the Z-Index has changed, re-evaluate children
-        if (data.flags["world-explorer"].position) {
+        if (worldExplorerFlags.position) {
+            console.log("SORT CHILDREN");
             canvas.primary.sortChildren();
         }
 
         // Handle side-controls not re-rendering when the world explorer mode changes
-        if ("enabled" in data.flags["world-explorer"]) {
+        if ("enabled" in worldExplorerFlags) {
             ui.controls.initialize();
         }
     }
@@ -174,7 +195,7 @@ Hooks.on('renderSceneControls', (controls) => {
 });
 
 /** Refreshes the scene on token move, revealing a location if necessary */
-function updateForToken(token) {
+function updateForToken(token, data={}) {
     if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
 
     // Only do token reveals for player owned or player friendly tokens
@@ -182,16 +203,21 @@ function updateForToken(token) {
         return;
     }
 
-    if (canvas.worldExplorer.settings.persistExploredAreas) {
+    const settings = canvas.worldExplorer.settings;
+    if (settings.persistExploredAreas) {
         // Computing token's center is required to not reveal an area to the token's left upon token's creation.
         // This happened on "Hexagonal Rows - Odd" grid configuration during token creation. Using center works
         // on every grid configuration afaik.
         const center = {
-            x: token.x + ((token.parent?.dimensions?.size / 2) ?? 0),
-            y: token.y + ((token.parent?.dimensions?.size / 2) ?? 0),
+            x: (data.x ?? token.x) + ((token.parent?.dimensions?.size / 2) ?? 0),
+            y: (data.y ?? token.y) + ((token.parent?.dimensions?.size / 2) ?? 0),
         };
         canvas.worldExplorer.reveal(center);
-    } else {
+    } 
+}
+
+const refreshThrottled = foundry.utils.throttle(() => {
+    if (canvas.worldExplorer?.settings.revealRadius) {
         canvas.worldExplorer.refreshMask();
     }
-}
+}, 30);

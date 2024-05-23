@@ -113,7 +113,6 @@ export class WorldExplorerLayer extends InteractionLayer {
     }
 
     initialize(options) {
-        console.log("OPTIONS: ", options);
         this.overlayBackground = new PIXI.Graphics();
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 

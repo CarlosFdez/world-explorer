@@ -84,7 +84,6 @@ Hooks.on("updateScene", (scene, data) => {
 
         // If the Z-Index has changed, re-evaluate children
         if (worldExplorerFlags.position) {
-            console.log("SORT CHILDREN");
             canvas.primary.sortChildren();
         }
 

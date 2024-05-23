@@ -1,6 +1,13 @@
 import { OpacityGMAdjuster } from "./module/opacity-slider.mjs";
 import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./module/world-explorer-layer.mjs";
 
+const POSITION_OPTIONS = {
+    back: "WorldExplorer.SceneSettings.PositionOption.back",
+    behindDrawings: "WorldExplorer.SceneSettings.PositionOption.behindDrawings",
+    behindTokens: "WorldExplorer.SceneSettings.PositionOption.behindTokens",
+    front: "WorldExplorer.SceneSettings.PositionOption.front",
+}
+
 Hooks.on("init", async () => {
     // Add world explorer layer
     CONFIG.Canvas.layers["worldExplorer"] = {
@@ -12,16 +19,20 @@ Hooks.on("init", async () => {
     const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
     SceneConfig.prototype._renderInner = async function(...args) {
         const $html = await defaultSceneConfigRender.apply(this, args);
-        const settings = { ...DEFAULT_SETTINGS, ...this.document.flags["world-explorer"] };
+        const settings = { 
+            ...DEFAULT_SETTINGS, 
+            ...this.document.flags["world-explorer"],
+            POSITION_OPTIONS,
+        };
         const templateName = "modules/world-explorer/templates/scene-settings.html";
         const template = await renderTemplate(templateName, settings);
         
         const name = game.i18n.localize("WorldExplorer.Name");
         const header = $(`<a class="item" data-tab="world-explorer"><i class="fa fa-map"></i> ${name}</a>`);
-        $html.find(".sheet-tabs").append(header);
+        $html.find(".sheet-tabs[data-group=main]").append(header);
 
         const $tab = $(`<div class="tab" data-tab="world-explorer"/>`);
-        $html.find("button[type='submit']").before($tab.append(template));
+        $html.find("footer.sheet-footer").before($tab.append(template));
         return $html;
     };
 });
@@ -102,8 +113,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 name: "reset",
                 title: game.i18n.localize("WorldExplorer.Tools.Reset"),
                 icon: "fas fa-trash",
+                button: true,
                 onClick: async () => {
-                    const code = randomID(4).toLowerCase();
+                    const code = foundry.utils.randomID(4).toLowerCase();
                     const content = `
                         <p>${game.i18n.localize("WorldExplorer.ResetDialog.Content")}</p>
                         <p>${game.i18n.format("WorldExplorer.ResetDialog.Confirm", { code })}</p>
@@ -131,7 +143,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                         },
                         render: ($html) => {
                             const $codeInput = $html.find("input");
-                            const $buttons = $html.find("button");
+                            const $buttons = $html.find("button:not([data-button=cancel]");
                             $buttons.prop("disabled", true);
                             $codeInput.on("input", () => {
                                 const matches = $codeInput.val().trim() === code; 
@@ -178,7 +190,7 @@ function updateForToken(token) {
             x: token.x + ((token.parent?.dimensions?.size / 2) ?? 0),
             y: token.y + ((token.parent?.dimensions?.size / 2) ?? 0),
         };
-        canvas.worldExplorer.reveal(center.x, center.y);
+        canvas.worldExplorer.reveal(center);
     } else {
         canvas.worldExplorer.refreshMask();
     }

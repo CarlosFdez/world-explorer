@@ -1,3 +1,5 @@
+// import { DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
+
 export class OpacityGMAdjuster extends Application {
     static instance = new this();
 

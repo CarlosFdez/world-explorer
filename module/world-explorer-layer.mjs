@@ -1,7 +1,13 @@
 import { SceneUpdater } from "./scene-updater.mjs";
-import { expandPolygon, translatePolygon } from "./util.mjs";
 
 const MODULE = "world-explorer";
+
+/**
+ * A pair of row and column coordinates of a grid space.
+ * @typedef {object} GridOffset
+ * @property {number} i    The row coordinate
+ * @property {number} j    The column coordinate
+ */
 
 export const DEFAULT_SETTINGS = {
     color: "#000000",
@@ -37,10 +43,18 @@ export class WorldExplorerLayer extends InteractionLayer {
         };
     }
 
-    static get PRIMARY_SORT_ORDER() {
-        // Tokens are 750, Drawings are 500
-        const position = canvas.worldExplorer?.settings.position
-        return position === "front" ? 1000 : position === "behindTokens" ? 700 : position === "behindDrawings" ? 250 : 0;
+    get sortLayer() {
+        // Tokens are 700, Drawings are 600, Tiles are 500
+        switch (this.settings.position) {
+            case "front":
+                return 1000;
+            case "behindTokens":
+                return 650;
+            case "behindDrawings":
+                return 550;
+            default:
+                return 0;
+        }
     }
 
     constructor() {
@@ -51,10 +65,13 @@ export class WorldExplorerLayer extends InteractionLayer {
         this.state = {};
     }
 
+    /** Any settings we are currently previewing. Currently unused, will be used once we're mot familiar with the scene config preview */ 
+    previewSettings = {};
+
     /** @returns {WorldExplorerFlags} */
     get settings() {
         const settings = this.scene.flags[MODULE] ?? {};
-        return { ...DEFAULT_SETTINGS, ...settings };
+        return { ...DEFAULT_SETTINGS, ...settings, ...this.previewSettings };
     }
 
     get elevation() {
@@ -66,11 +83,12 @@ export class WorldExplorerLayer extends InteractionLayer {
      * @type {GridHighlight}
      */
     get highlightLayer() {
-        return canvas.grid.highlightLayers[this.name] || canvas.grid.addHighlightLayer(this.name);
+        return canvas.interface.grid.highlightLayers[this.name] || canvas.interface.grid.addHighlightLayer(this.name);
     }
 
+    /** @type {GridOffset[]} */
     get revealed() {
-        return this.scene.getFlag(MODULE, "revealedPositions") ?? [];
+        return (this.scene.getFlag(MODULE, "revealedPositions") ?? []).map(([i, j]) => ({ i, j }));
     }
 
     get enabled() {
@@ -94,7 +112,8 @@ export class WorldExplorerLayer extends InteractionLayer {
         return this.enabled && this.state.clearing;
     }
 
-    initialize() {
+    initialize(options) {
+        console.log("OPTIONS: ", options);
         this.overlayBackground = new PIXI.Graphics();
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
@@ -226,14 +245,13 @@ export class WorldExplorerLayer extends InteractionLayer {
 
         // draw black over the tiles that are revealed
         const gridRevealRadius = this.getGridRevealRadius();
-        for (const position of this.scene.getFlag(MODULE, "revealedPositions") ?? []) {
-            const poly = this._getGridPolygon(...position);
+        for (const position of this.revealed) {
+            const poly = this._getGridPolygon(position);
             graphic.drawPolygon(poly);
 
             // If we want grid elements to have an extended reveal, we need to draw those too
             if (gridRevealRadius > 0) {
-                const coords = canvas.grid.grid.getPixelsFromGridPosition(...position);
-                const [x, y] = canvas.grid.getCenter(...coords).map(Math.round);
+                const { x, y } = canvas.grid.getCenterPoint(position);
                 graphic.drawCircle(x, y, gridRevealRadius);
             }
         }
@@ -267,31 +285,34 @@ export class WorldExplorerLayer extends InteractionLayer {
 
         // Convert from units to pixel radius, stolen from token.getLightRadius()
         const u = Math.abs(gridRadius);
-        const hw = (canvas.grid.w / 2);
+        const hw = (canvas.grid.sizeX / 2);
         return (((u / canvas.dimensions.distance) * canvas.dimensions.size) + hw) * Math.sign(gridRadius);
     }
 
     /**
      * Returns true if a grid coordinate (x, y) is revealed.
-     * @param {PointArray[]} position
+     * @param {Point} position
      */
-    isRevealed(...position) {
-        return this._getIndex(...position) > -1;
+    isRevealed(position) {
+        return this._getIndex(position.x, position.y) > -1;
     }
 
     /** 
      * Reveals a coordinate and saves it to the scene
-     * @param {PointArray[]} position
+     * @param {Point} position
      */
-    reveal(x, y) {
+    reveal(position) {
         if (!this.enabled) return;
-        this.updater.reveal(x, y);
+        this.updater.reveal(position.x, position.y);
     }
 
-    /** Unreveals a coordinate and saves it to the scene */
-    unreveal(x, y) {
+    /** 
+     * Unreveals a coordinate and saves it to the scene 
+     * @param {Point} position
+     */
+    unreveal(position) {
         if (!this.enabled) return;
-        this.updater.hide(x, y);
+        this.updater.hide(position.x, position.y);
     }
 
     /** Clears the entire scene. If reveal: true is passed, reveals all positions instead */
@@ -307,7 +328,7 @@ export class WorldExplorerLayer extends InteractionLayer {
     registerMouseListeners() {
         // Renders the highlight to use for the grid's future status
         const renderHighlight = (position, reveal) => {
-            const [x, y] = canvas.grid.getTopLeft(position.x, position.y);
+            const { x, y } = canvas.grid.getTopLeftPoint(position);
             this.highlightLayer.clear();
             
             // In certain modes, we only go one way, check if the operation is valid
@@ -315,7 +336,7 @@ export class WorldExplorerLayer extends InteractionLayer {
             const canHide = ["toggle", "hide"].includes(this.state.tool);
             if ((reveal && canReveal) || (!reveal && canHide)) {
                 const color = reveal ? 0x0022FF : 0xFF0000;
-                canvas.grid.grid.highlightGridPosition(this.highlightLayer, { x, y, color, border: 0xFF0000 });
+                canvas.interface.grid.highlightPosition(this.highlightLayer.name, { x, y, color, border: 0xFF0000 });
             }
         };
 
@@ -327,11 +348,11 @@ export class WorldExplorerLayer extends InteractionLayer {
             
             if (this.editing && event.data.button === 0) {
                 const coords = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(coords.x, coords.y);
+                const revealed = this.isRevealed(coords);
                 if (revealed && canHide) {
-                    this.unreveal(coords.x, coords.y);
+                    this.unreveal(coords);
                 } else if (!revealed && canReveal) {
-                    this.reveal(coords.x, coords.y)
+                    this.reveal(coords)
                 } else {
                     return;
                 }
@@ -345,17 +366,17 @@ export class WorldExplorerLayer extends InteractionLayer {
 
             // Get mouse position translated to canvas coords
             const coords = event.data.getLocalPosition(canvas.app.stage);
-            const revealed = this.isRevealed(coords.x, coords.y)
+            const revealed = this.isRevealed(coords)
             renderHighlight(coords, !revealed);
 
             // For brush or eraser modes, allow click drag drawing
             if (event.data.buttons === 1 && this.state.tool !== "toggle") {
                 const coords = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(coords.x, coords.y);
+                const revealed = this.isRevealed(coords);
                 if (revealed && this.state.tool == "hide") {
-                    this.unreveal(coords.x, coords.y);
+                    this.unreveal(coords);
                 } else if (!revealed && this.state.tool === "reveal") {
-                    this.reveal(coords.x, coords.y);
+                    this.reveal(coords);
                 }
             }
         });
@@ -363,35 +384,24 @@ export class WorldExplorerLayer extends InteractionLayer {
 
     /**
      * Gets the grid polygon from a grid position (row and column).
+     * @param {GridOffset} offset
      */
-    _getGridPolygon(row, column) {
-        const [x, y] = canvas.grid.grid.getPixelsFromGridPosition(row, column);
-        if (canvas.grid.isHex) {
-            // Hexes are vulnerable to roundoff errors, which can create thin gaps between cells.
-            // We shift the center to a whole number, shift the polygon, then expand the polygon to whole number coords
-            // Shifting the center allows us to handle Hexagonal Column configurations when expanded
-            const center = canvas.grid.grid.getCenter(x, y);
-            const delta = center.map(v => Math.round(v) - v);
-            const hexPolygon = new PIXI.Polygon(canvas.grid.grid.getPolygon(x, y));
-            hexPolygon.points = hexPolygon.points.map((v, idx) => v + delta[idx % 2]);
-            return expandPolygon(hexPolygon, center.map(Math.round));
-        } else {
-            const size = canvas.grid.size;
-            return new PIXI.Polygon(x, y, x+size, y, x+size, y+size, x, y+size);
-        }
+    _getGridPolygon(offset) {
+        // todo: check if this has issues with gaps again. If so, bring back expandPolygon
+        return new PIXI.Polygon(canvas.grid.getVertices(offset));
     }
 
-    /** @param {PointArray[]} point */
+    /** @param {PointArray} point */
     _getIndex(...point) {
-        const [row, col] = canvas.grid.grid.getGridPositionFromPixels(...point);
-        return this.revealed.findIndex(([revealedRow, revealedCol]) => revealedRow === row && revealedCol === col);
+        const { i, j } = canvas.grid.getOffset({ x: point[0], y: point[1] });
+        return this.revealed.findIndex((r) => r.i === i && r.j === j);
     }
 
     /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */
     #migratePositions() {
         const flags = this.settings;
         if ("revealed" in flags) {
-            const newRevealed = flags.revealed.map((position) => canvas.grid.grid.getGridPositionFromPixels(...position));
+            const newRevealed = flags.revealed.map((position) => canvas.grid.getGridPositionFromPixels(...position));
             canvas.scene.flags["world-explorer"].revealed = null;
             this.scene.update({
                 "flags.world-explorer.revealedPositions": newRevealed,

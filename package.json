@@ -17,7 +17,6 @@
   },
   "homepage": "https://github.com/CarlosFdez/world-explorer#readme",
   "devDependencies": {
-    "@league-of-foundry-developers/foundry-vtt-types": "^9.269.0",
     "pixi.js": "^7.2.4",
     "typescript": "^4.7.4"
   }

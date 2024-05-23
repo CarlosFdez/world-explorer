@@ -5,13 +5,14 @@
   "version": "0.9.2",
   "authors": [
     {
-      "name": "Supe"
+      "name": "Supe",
+      "flags": {}
     }
   ],
   "compatibility": {
-    "minimum": "11",
-    "verified": "11",
-    "maximum": "11"
+    "minimum": "12.324",
+    "verified": "12.324",
+    "maximum": "12"
   },
   "esmodules": [
     "index.js"
@@ -20,12 +21,14 @@
     {
       "lang": "en",
       "name": "English",
-      "path": "lang/en.json"
+      "path": "lang/en.json",
+      "flags": {}
     },
     {
       "lang": "ja",
       "name": "日本語",
-      "path": "lang/ja.json"
+      "path": "lang/ja.json",
+      "flags": {}
     }
   ],
   "styles": [

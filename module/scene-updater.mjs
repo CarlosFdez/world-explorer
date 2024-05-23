@@ -2,6 +2,7 @@ import { debounceTrailing, uniq } from "./util.mjs";
 
 const MODULE = "world-explorer";
 
+/** A wrapper around a scene used to handle persistance and sequencing */
 export class SceneUpdater {
     constructor(scene) {
         this.scene = scene;
@@ -10,7 +11,8 @@ export class SceneUpdater {
     }
 
     reveal(x, y) {
-        const position = canvas.grid.grid.getGridPositionFromPixels(x, y);
+        const { i, j } = canvas.grid.getOffset({ x, y });
+        const position = [i, j];
         this.hexUpdates.set(position.toString(), {
             position,
             state: true,
@@ -19,7 +21,8 @@ export class SceneUpdater {
     }
 
     hide(x, y) {
-        const position = canvas.grid.grid.getGridPositionFromPixels(x, y);
+        const { i, j } = canvas.grid.getOffset({ x, y });
+        const position = [i, j];
         this.hexUpdates.set(position.toString(), {
             position,
             state: false,
@@ -34,8 +37,9 @@ export class SceneUpdater {
         if (reveal) {
             // Add a reveal for every grid position. If this is a hex grid, we also need to mark negative positions by one.
             const d = canvas.dimensions;
-            const dimensions = canvas.grid.grid.getGridPositionFromPixels(d.width - 1, d.height - 1);
-            if (canvas.grid.isHex) {
+            const offset = canvas.grid.getOffset({ x: d.width - 1, y: d.height - 1 });
+            const dimensions = [offset.i, offset.j];
+            if (canvas.grid.isHexagonal) {
                 dimensions[0] += 1;
                 dimensions[1] += 1;
             }

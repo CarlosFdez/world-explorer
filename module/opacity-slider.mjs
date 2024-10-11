@@ -1,3 +1,5 @@
+import { DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
+
 export class OpacityGMAdjuster extends Application {
     static instance = new this();
 
@@ -7,14 +9,13 @@ export class OpacityGMAdjuster extends Application {
         return {
             ...super.defaultOptions,
             width: 400,
-            height: 45,
             id: "world-explorer-opacity-adjuster",
-            minimizable: false,
+            minimizable: false
         };
     }
 
     get template() {
-        return "modules/world-explorer/templates/opacity-adjuster.html";
+        return "modules/world-explorer/templates/opacity-adjuster.hbs";
     }
 
     async render(force = true, options) {
@@ -22,7 +23,7 @@ export class OpacityGMAdjuster extends Application {
         if (!this.scene) return this;
 
         // Adjust position of this application's window
-        const bounds = ui.controls.element.find('li[data-tool="opacity"]')[0].getBoundingClientRect();
+        const bounds = ui.controls.element.find(`li[data-tool="opacity"]`)[0].getBoundingClientRect();
         options.left = bounds.right + 6;
         options.top = bounds.top - 3;
 
@@ -32,25 +33,26 @@ export class OpacityGMAdjuster extends Application {
     getData() {
         const flags = this.scene.flags["world-explorer"] ?? {};
         return {
-            opacityGM: flags.opacityGM ?? DEFAULT_SETTINGS.opacityGM,
+            partialOpacityGM: flags.partialOpacityGM ?? DEFAULT_SETTINGS.partialOpacityGM,
+            opacityGM: flags.opacityGM ?? DEFAULT_SETTINGS.opacityGM
         };
     }
 
     activateListeners($html) {
         if (!this.scene) return;
 
-        $("#world-explorer-opacity-adjuster").find(".window-header").remove();
+        $(`#${this.id}`).find(".window-header").remove();
 
-        const $slider = $html.find("[type=range]");
-        $slider.on("input", (event) => {
+        $html.on("input", (event) => {
             const value = Number(event.target.value);
-            this.scene.update({ "flags.world-explorer.opacityGM": value });
+            const updateId = event.target.parentNode.name;
+            this.scene.update({ [updateId]: value });
         });
     }
 
     detectClose(controls) {
         if (controls.activeControl !== "world-explorer" && this.rendered) {
-            $("#world-explorer-opacity-adjuster").fadeOut(() => {
+            $(`#${this.id}`).fadeOut(() => {
                 this.close({ force: true });
             });
         }
@@ -58,12 +60,12 @@ export class OpacityGMAdjuster extends Application {
 
     toggleVisibility() {
         if (this.rendered) {
-            $("#world-explorer-opacity-adjuster").fadeOut(() => {
+            $(`#${this.id}`).fadeOut(() => {
                 this.close({ force: true });
             });
         } else {
             this.render(true, { scene: canvas.scene }).then(() => {
-                $("#world-explorer-opacity-adjuster").hide().fadeIn();
+                $(`#${this.id}`).hide().fadeIn();
             });
         }
     }

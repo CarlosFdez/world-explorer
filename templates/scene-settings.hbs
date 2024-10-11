@@ -1,0 +1,93 @@
+{{!-- Enable --}}
+<div class="form-group">
+    <label>{{localize "WorldExplorer.SceneSettings.Enabled"}}</label>
+    <input type="checkbox" name="flags.world-explorer.enabled" {{checked enabled}}/>
+</div>
+
+{{!-- Image --}}
+<div class="form-group">
+    <label>{{localize "WorldExplorer.SceneSettings.Image.Label"}}</label>
+    <div class="form-fields">
+        <file-picker name="flags.world-explorer.image" type="imagevideo" value="{{image}}"></file-picker>
+    </div>
+</div>
+{{!-- Colour --}}
+<div class="form-group">
+    <label>{{localize "WorldExplorer.SceneSettings.Colors.Overlay.Label"}}</label>
+    <div class="form-fields">
+        <color-picker name="flags.world-explorer.color" value="{{color}}"  placeholder="Default (#000000)"></color-picker>
+    </div>
+    <p class="notes">{{localize "WorldExplorer.SceneSettings.Colors.Overlay.Hint"}}</p>
+</div>
+{{!-- Partial Colour --}}
+<div class="form-group">
+    <label>{{localize "WorldExplorer.SceneSettings.Colors.Partial.Label"}}</label>
+    <div class="form-fields">
+        <color-picker name="flags.world-explorer.partialColor" value="{{partialColor}}" placeholder="Default (same as above)"></color-picker>
+    </div>
+    <p class="notes">{{localize "WorldExplorer.SceneSettings.Colors.Partial.Hint"}}</p>
+</div>
+{{!-- Overlay Position --}}
+<div class="form-group">
+    <label>{{localize "WorldExplorer.SceneSettings.Position.Label"}}</label>
+    <div class="form-fields">
+        <select name="flags.world-explorer.position">
+            {{selectOptions options.positions selected=position localize=true}}
+        </select>
+    </div>
+    <p class="notes">{{localize "WorldExplorer.SceneSettings.Position.Hint"}}</p>
+</div>
+{{!-- Extend Revealed Tiles --}}
+<div class="form-group">
+    <label>{{localize "WorldExplorer.SceneSettings.GridReveal.Label"}} <span class="units">({{units}})</span></label>
+    <div class="form-fields">
+        <input type="number" name="flags.world-explorer.gridRevealRadius" value="{{gridRevealRadius}}">
+    </div>
+    <p class="notes">{{localize "WorldExplorer.SceneSettings.GridReveal.Hint"}}</p>
+</div>
+{{!-- GM Opacity --}}
+<fieldset class="world-explorer-setting">
+    <legend><i class="fas fa-crown"></i> {{localize "WorldExplorer.SceneSettings.Opacity.Title" role=options.gm }}</legend>
+    <div class="form-group">
+        <label>{{localize "WorldExplorer.SceneSettings.Opacity.Partial"}}</label>
+        <div class="form-fields">
+            <range-picker name="flags.world-explorer.partialOpacityGM" value="{{partialOpacityGM}}" min="0" max="1" step="0.05"></range-picker>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>{{localize "WorldExplorer.SceneSettings.Opacity.Hidden"}}</label>
+        <div class="form-fields">
+            <range-picker name="flags.world-explorer.opacityGM" value="{{opacityGM}}" min="0" max="1" step="0.05"></range-picker>
+        </div>
+    </div>
+</fieldset>
+{{!-- Player Opacity --}}
+<fieldset class="world-explorer-setting">
+    <legend><i class="fas fa-users"></i> {{localize "WorldExplorer.SceneSettings.Opacity.Title" role=options.player }}</legend>
+    <div class="form-group">
+        <label>{{localize "WorldExplorer.SceneSettings.Opacity.Partial"}}</label>
+        <div class="form-fields">
+            <range-picker name="flags.world-explorer.partialOpacityPlayer" value="{{partialOpacityPlayer}}" min="0" max="1" step="0.05"></range-picker>
+        </div>
+    </div>
+    <div class="form-group">
+        <label>{{localize "WorldExplorer.SceneSettings.Opacity.Hidden"}}</label>
+        <div class="form-fields">
+            <range-picker name="flags.world-explorer.opacityPlayer" value="{{opacityPlayer}}" min="0" max="1" step="0.05"></range-picker>
+        </div>
+    </div>
+</fieldset>
+{{!-- Token Interactions --}}
+<fieldset class="world-explorer-setting">
+    <legend><i class="fas fa-circle-user"></i> {{localize "WorldExplorer.SceneSettings.TokenInteractions.Title"}}</legend>
+    <div class="form-group">
+        <label>{{localize "WorldExplorer.SceneSettings.TokenInteractions.PersistExplored"}}</label>
+        <input type="checkbox" name="flags.world-explorer.persistExploredAreas" {{checked persistExploredAreas}}/>
+    </div>
+    <div class="form-group">
+        <label>{{localize "WorldExplorer.SceneSettings.TokenInteractions.TokenReveal"}} <span class="units">({{units}})</span></label>
+        <div class="form-fields">
+            <input type="number" name="flags.world-explorer.revealRadius" value="{{revealRadius}}">
+        </div>
+    </div>
+</fieldset>

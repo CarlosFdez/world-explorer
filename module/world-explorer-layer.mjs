@@ -325,6 +325,17 @@ export class WorldExplorerLayer extends InteractionLayer {
     }
 
     registerMouseListeners() {
+        // We need to make sure that pointer events are only valid if they started on the canvas
+        // If null, dragging is not ongoing. If false, all events should be blocked. If true, we started dragging from the canvas
+        let draggingOnCanvas = null;
+
+        /** Returns true if the element is the board, aka the main canvas */
+        const canEditLayer = (event) => {
+            const element = event.srcElement;
+            const isMainCanvas = element && element.tagName === "CANVAS" && element.id === "board";
+            return draggingOnCanvas !== false && this.enabled && this.editing && (draggingOnCanvas || isMainCanvas);
+        };
+
         // Renders the highlight to use for the grid's future status
         const renderHighlight = (position, reveal) => {
             const { x, y } = canvas.grid.getTopLeftPoint(position);
@@ -339,13 +350,21 @@ export class WorldExplorerLayer extends InteractionLayer {
             }
         };
 
-        canvas.stage.addListener('pointerdown', (event) => {
-            if (!this.enabled) return;
+        canvas.stage.addListener('pointerup', (event) => {
+            draggingOnCanvas = null; // clear dragging status when mouse is lifted
+        });
 
+        canvas.stage.addListener('pointerdown', (event) => {
+            if (!canEditLayer(event)) {
+                draggingOnCanvas = false;
+                return;
+            }
+
+            draggingOnCanvas = true;
             const canReveal = ["toggle", "reveal"].includes(this.state.tool);
             const canHide = ["toggle", "hide"].includes(this.state.tool);
             
-            if (this.editing && event.data.button === 0) {
+            if (event.data.button === 0) {
                 const coords = event.data.getLocalPosition(canvas.app.stage);
                 const revealed = this.isRevealed(coords);
                 if (revealed && canHide) {
@@ -361,7 +380,19 @@ export class WorldExplorerLayer extends InteractionLayer {
         });
 
         canvas.stage.addListener('pointermove', (event) => {
-            if (!(this.enabled && this.editing)) return;
+            // If no button is held down, clear the dragging status 
+            if (event.data.buttons !== 1) {
+                draggingOnCanvas = null;
+            }
+
+            if (!canEditLayer(event)) {
+                // If we can't edit the layer *and* a button is held down, flag as a non-canvas drag
+                if (event.data.buttons === 1) {
+                    draggingOnCanvas = false;
+                }
+                this.highlightLayer.clear();
+                return;
+            }
 
             // Get mouse position translated to canvas coords
             const coords = event.data.getLocalPosition(canvas.app.stage);
@@ -370,6 +401,7 @@ export class WorldExplorerLayer extends InteractionLayer {
 
             // For brush or eraser modes, allow click drag drawing
             if (event.data.buttons === 1 && this.state.tool !== "toggle") {
+                draggingOnCanvas = true;
                 const coords = event.data.getLocalPosition(canvas.app.stage);
                 const revealed = this.isRevealed(coords);
                 if (revealed && this.state.tool == "hide") {

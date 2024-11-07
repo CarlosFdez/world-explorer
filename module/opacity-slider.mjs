@@ -14,7 +14,7 @@ export class OpacityGMAdjuster extends Application {
     }
 
     get template() {
-        return "modules/world-explorer/templates/opacity-adjuster.html";
+        return "modules/world-explorer/templates/opacity-adjuster.hbs";
     }
 
     async render(force = true, options) {

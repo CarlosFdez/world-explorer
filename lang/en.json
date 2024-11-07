@@ -9,23 +9,28 @@
             "Color": "Overlay Color",
             "Image": "Overlay Image",
             "Reveal": "Token Reveal (Distance)",
-            "GridReveal": "Grid Tile Extended Reveal (Distance)",
+            "GridReveal": {
+                "Name": "Grid Extended Reveal (Distance)",
+                "Hint": "Extends visibility of revealed grid spaces into adjacent spaces."
+            },
             "GM_Opacity": "Game Master Overlay Opacity",
             "Player_Opacity": "Player Overlay Opacity",
             "Persist_Explored_Areas": "Keep areas explored by tokens",
-            "Position": "Overlay Position",
-            "PositionHint": "Whether it should display below tiles and textures or above.",
-            "PositionOption": {
-                "back": "Cover the map only",
-                "behindDrawings": "Cover the map and non-overhead tiles",
-                "behindTokens": "Cover the map, non-overhead tiles, and drawings",
-                "front": "Cover everything except grid"
+            "Position": {
+                "Name": "Overlay Position",
+                "Hint": "Whether it should display below tiles and textures or above.",
+                "Choices": {
+                    "back": "Cover the map only",
+                    "behindDrawings": "Cover the map and non-overhead tiles",
+                    "behindTokens": "Cover the map, non-overhead tiles, and drawings",
+                    "front": "Cover everything except grid"
+                }
             }
         },
         "Tools": {
-            "Toggle": "Toggle Tiles",
-            "Reveal": "Reveal Tiles",
-            "Hide": "Hide Tiles",
+            "Toggle": "Toggle Spaces",
+            "Reveal": "Reveal Spaces",
+            "Hide": "Hide Spaces",
             "Opacity": "Game Master Overlay Opacity",
             "Reset": "Reset Scene"
         },

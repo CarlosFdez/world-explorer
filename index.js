@@ -2,10 +2,10 @@ import { OpacityGMAdjuster } from "./module/opacity-slider.mjs";
 import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./module/world-explorer-layer.mjs";
 
 const POSITION_OPTIONS = {
-    back: "WorldExplorer.SceneSettings.PositionOption.back",
-    behindDrawings: "WorldExplorer.SceneSettings.PositionOption.behindDrawings",
-    behindTokens: "WorldExplorer.SceneSettings.PositionOption.behindTokens",
-    front: "WorldExplorer.SceneSettings.PositionOption.front",
+    back: "WorldExplorer.SceneSettings.Position.Choices.back",
+    behindDrawings: "WorldExplorer.SceneSettings.Position.Choices.behindDrawings",
+    behindTokens: "WorldExplorer.SceneSettings.Position.Choices.behindTokens",
+    front: "WorldExplorer.SceneSettings.Position.Choices.front",
 }
 
 Hooks.on("init", async () => {
@@ -24,7 +24,7 @@ Hooks.on("init", async () => {
             ...this.document.flags["world-explorer"],
             POSITION_OPTIONS,
         };
-        const templateName = "modules/world-explorer/templates/scene-settings.html";
+        const templateName = "modules/world-explorer/templates/scene-settings.hbs";
         const template = await renderTemplate(templateName, settings);
         
         const name = game.i18n.localize("WorldExplorer.Name");

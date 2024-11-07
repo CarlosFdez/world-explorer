@@ -101,28 +101,28 @@ Hooks.on("getSceneControlButtons", (controls) => {
     controls.push({
         name: "world-explorer",
         title: game.i18n.localize("WorldExplorer.Name"),
-        icon: "fas fa-map",
+        icon: "fa-solid fa-map",
         layer: "worldExplorer",
         tools: [
             {
                 name: "toggle",
                 title: game.i18n.localize("WorldExplorer.Tools.Toggle"),
-                icon: "fas fa-random",
+                icon: "fa-solid fa-random",
             },
             {
                 name: "reveal",
                 title: game.i18n.localize("WorldExplorer.Tools.Reveal"),
-                icon: "fas fa-paint-brush"
+                icon: "fa-solid fa-paint-brush"
             },
             {
                 name: "hide",
                 title: game.i18n.localize("WorldExplorer.Tools.Hide"),
-                icon: "fas fa-eraser"
+                icon: "fa-solid fa-eraser"
             },
             {
                 name: "opacity",
                 title: game.i18n.localize("WorldExplorer.Tools.Opacity"),
-                icon: "fas fa-lightbulb",
+                icon: "fa-solid fa-adjust",
                 toggle: true,
                 onClick: () => {
                     const adjuster = OpacityGMAdjuster.instance;
@@ -132,7 +132,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
             {
                 name: "reset",
                 title: game.i18n.localize("WorldExplorer.Tools.Reset"),
-                icon: "fas fa-trash",
+                icon: "fa-solid fa-trash",
                 button: true,
                 onClick: async () => {
                     const code = foundry.utils.randomID(4).toLowerCase();

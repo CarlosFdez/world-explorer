@@ -43,12 +43,6 @@ Hooks.on("init", async () => {
     }
 });
 
-function createHTML(str) {
-    const template = document.createElement("template");
-    template.innerHTML = str;
-    return template.content.firstChild;
-}
-
 Hooks.on("canvasReady", () => {
     canvas.worldExplorer?.onCanvasReady();
 });
@@ -101,7 +95,7 @@ Hooks.on("updateScene", (scene, data) => {
 
         // Handle side-controls not re-rendering when the world explorer mode changes
         if ("enabled" in worldExplorerFlags) {
-            ui.controls.initialize();
+            ui.controls.render({ reset: true });
         }
     }
 });

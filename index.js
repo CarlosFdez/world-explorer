@@ -110,30 +110,31 @@ Hooks.on("updateScene", (scene, data) => {
 Hooks.on("getSceneControlButtons", (controls) => {
     if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
 
-    controls.push({
-        name: "world-explorer",
+    console.log(controls);
+    controls.worldExplorer = {
+        name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),
         icon: "fa-solid fa-map",
         layer: "worldExplorer",
-        tools: [
-            {
+        tools: {
+            toggle: {
                 name: "toggle",
-                title: game.i18n.localize("WorldExplorer.Tools.Toggle"),
+                title: "WorldExplorer.Tools.Toggle",
                 icon: "fa-solid fa-random",
             },
-            {
+            reveal: {
                 name: "reveal",
-                title: game.i18n.localize("WorldExplorer.Tools.Reveal"),
+                title: "WorldExplorer.Tools.Reveal",
                 icon: "fa-solid fa-paint-brush"
             },
-            {
+            hide: {
                 name: "hide",
-                title: game.i18n.localize("WorldExplorer.Tools.Hide"),
+                title: "WorldExplorer.Tools.Hide",
                 icon: "fa-solid fa-eraser"
             },
-            {
+            opacity: {
                 name: "opacity",
-                title: game.i18n.localize("WorldExplorer.Tools.Opacity"),
+                title: "WorldExplorer.Tools.Opacity",
                 icon: "fa-solid fa-adjust",
                 toggle: true,
                 onClick: () => {
@@ -141,12 +142,12 @@ Hooks.on("getSceneControlButtons", (controls) => {
                     adjuster.toggleVisibility();
                 },
             },
-            {
+            reset: {
                 name: "reset",
                 title: game.i18n.localize("WorldExplorer.Tools.Reset"),
                 icon: "fa-solid fa-trash",
                 button: true,
-                onClick: async () => {
+                onChange: async () => {
                     const code = foundry.utils.randomID(4).toLowerCase();
                     const content = `
                         <p>${game.i18n.localize("WorldExplorer.ResetDialog.Content")}</p>
@@ -185,16 +186,16 @@ Hooks.on("getSceneControlButtons", (controls) => {
                     }).render(true);
                 },
             }
-        ],
+        },
         activeTool: "toggle",
-    });
+    };
 });
 
 // Handle Control Changes
 Hooks.on('renderSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
-    const isExplorer = controls.control.name === "world-explorer";
+    const isExplorer = controls.control.name === "worldExplorer";
     const isEditTool = ["toggle", "reveal", "hide"].includes(controls.tool.name);
     if (isEditTool && isExplorer) {
         canvas.worldExplorer.startEditing(controls.tool.name);

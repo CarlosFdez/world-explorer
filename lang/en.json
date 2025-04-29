@@ -31,7 +31,7 @@
             "Toggle": "Toggle Spaces",
             "Reveal": "Reveal Spaces",
             "Hide": "Hide Spaces",
-            "Opacity": "Game Master Overlay Opacity",
+            "Opacity": "GM Overlay Opacity",
             "Reset": "Reset Scene"
         },
         "ResetDialog": {

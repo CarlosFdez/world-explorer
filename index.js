@@ -109,6 +109,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
         title: game.i18n.localize("WorldExplorer.Name"),
         icon: "fa-solid fa-map",
         layer: "worldExplorer",
+        onChange: (_event, active) => {
+            if (active) canvas.worldExplorer.activate();
+        },
         tools: {
             toggle: {
                 name: "toggle",

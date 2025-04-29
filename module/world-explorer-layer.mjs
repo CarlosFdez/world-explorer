@@ -187,17 +187,6 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
-    // Work around foundry bug https://github.com/foundryvtt/foundryvtt/issues/10201
-    activate() {
-        if (!this.enabled) {
-            const control = ui.controls.controls[0];
-            ui.controls.initialize({ layer: control.layer });
-            return this.deactivate();
-        }
-
-        return super.activate();
-    }
-
     /** @param {EditingMode} mode */
     startEditing(mode) {
         this.state.clearing = true;
@@ -217,7 +206,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     refreshImage(image=null) {
         image = this.image ?? image;
         if (this.enabled && image) {
-            loadTexture(image).then((texture) => {
+            foundry.canvas.loadTexture(image).then((texture) => {
                 this.fogSprite.texture = texture;
             });
         } else {

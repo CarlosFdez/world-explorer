@@ -4,11 +4,18 @@ GM tool for hexcrawl campaigns that allows displaying a second manual fog of war
 
 If you're feeling generous, you can send something through [Paypal](https://paypal.me/carlosfernandez1779?locale.x=en_US) if you want.
 
-![image](https://user-images.githubusercontent.com/1286721/190068393-82f93dd3-07c2-4ab0-8341-d4e12e087e19.png)
+![image](https://github.com/user-attachments/assets/a70120ac-b992-493e-94dc-c2569d8351c5)
 
-## GM View (Transluscent)
-https://user-images.githubusercontent.com/1286721/132086739-ad68bffe-5c4a-43be-9df6-b102c41edfde.mp4
+## Features
 
-## Player View (Fully Opaque)
-![image](https://user-images.githubusercontent.com/1286721/132086592-31e6d361-63f7-4f79-b2d4-2aa25345e502.png)
+The module can be set to be enabled for a scene via the last tab in the scene settings. Once enabled, the button for it will show up on the canvas controls to the left. From there, you can either the map in toggle mode (where you enable/disable tiles one at time) or in reveal or hide modes. You can also reset the entire map from there (either hiding everything or showing everything).
 
+![image](https://github.com/user-attachments/assets/814debd6-aab8-4e69-b355-d3f2dfc9d42b)
+
+By default, the GM has 75% opacity and players have 100% opacity. While the GM can see what's underneath, the view is completely blocked for players unless you set it otherwise. The GM can change their own opacity from the canvas controls whenever they want.
+
+![image](https://github.com/user-attachments/assets/69b181b3-d62f-4496-b815-616fff2f5921)
+
+![image](https://github.com/user-attachments/assets/3e7ef0e1-ff66-4c1f-a816-81aac0023ef7)
+
+While the module expects a manual approach, you can set the module to automatically reveal tiles that players have ventured through. It only performs these updates for tokens that have a player owner. Tokens used to represent wandering encounters won't get revealed to players.

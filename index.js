@@ -110,7 +110,6 @@ Hooks.on("updateScene", (scene, data) => {
 Hooks.on("getSceneControlButtons", (controls) => {
     if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
 
-    console.log(controls);
     controls.worldExplorer = {
         name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),

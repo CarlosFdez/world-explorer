@@ -49,7 +49,7 @@ export class OpacityGMAdjuster extends Application {
     }
 
     detectClose(controls) {
-        if (controls.activeControl !== "world-explorer" && this.rendered) {
+        if (controls.control.name !== "world-explorer" && this.rendered) {
             $("#world-explorer-opacity-adjuster").fadeOut(() => {
                 this.close({ force: true });
             });

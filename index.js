@@ -15,27 +15,39 @@ Hooks.on("init", async () => {
         group: "primary",
     };
 
-    // Create scene configuration overrides
-    const defaultSceneConfigRender = SceneConfig.prototype._renderInner;
-    SceneConfig.prototype._renderInner = async function(...args) {
-        const $html = await defaultSceneConfigRender.apply(this, args);
-        const settings = { 
-            ...DEFAULT_SETTINGS, 
-            ...this.document.flags["world-explorer"],
-            POSITION_OPTIONS,
-        };
-        const templateName = "modules/world-explorer/templates/scene-settings.hbs";
-        const template = await renderTemplate(templateName, settings);
-        
-        const name = game.i18n.localize("WorldExplorer.Name");
-        const header = $(`<a class="item" data-tab="world-explorer"><i class="fa fa-map"></i> ${name}</a>`);
-        $html.find(".sheet-tabs[data-group=main]").append(header);
-
-        const $tab = $(`<div class="tab" data-tab="world-explorer"/>`);
-        $html.find("footer.sheet-footer").before($tab.append(template));
-        return $html;
+    // Add the world explorer tab and config to the scene config
+    // We need to make sure the world explorer tab renders before the footer
+    const label = game.i18n.localize("WorldExplorer.Name");
+    SceneConfig.TABS.sheet.tabs.push({ id: "worldExplorer", label, icon: "fa-solid fa-globe" });
+    const footerPart = SceneConfig.PARTS.footer;
+    delete SceneConfig.PARTS.footer;
+    SceneConfig.PARTS.worldExplorer = {
+        template: "modules/world-explorer/templates/scene-settings.hbs"
     };
+    SceneConfig.PARTS.footer = footerPart;
+
+    // Override part context to include the world explorer config data
+    const defaultRenderPartContext = SceneConfig.prototype._preparePartContext;
+    SceneConfig.prototype._preparePartContext = async function(partId, context, options) {
+        if (partId === "worldExplorer") {
+            return {
+                ...DEFAULT_SETTINGS, 
+                ...this.document.flags["world-explorer"],
+                POSITION_OPTIONS,
+                document: this.document,
+                tab: context.tabs[partId],
+            };
+        }
+
+        return defaultRenderPartContext.call(this, partId, context, options);
+    }
 });
+
+function createHTML(str) {
+    const template = document.createElement("template");
+    template.innerHTML = str;
+    return template.content.firstChild;
+}
 
 Hooks.on("canvasReady", () => {
     canvas.worldExplorer?.onCanvasReady();
@@ -182,10 +194,10 @@ Hooks.on("getSceneControlButtons", (controls) => {
 Hooks.on('renderSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
-    const isExplorer = controls.activeControl === "world-explorer";
-    const isEditTool = ["toggle", "reveal", "hide"].includes(controls.activeTool);
+    const isExplorer = controls.control.name === "world-explorer";
+    const isEditTool = ["toggle", "reveal", "hide"].includes(controls.tool.name);
     if (isEditTool && isExplorer) {
-        canvas.worldExplorer.startEditing(controls.activeTool);
+        canvas.worldExplorer.startEditing(controls.tool.name);
     } else {
         canvas.worldExplorer.stopEditing();
     }

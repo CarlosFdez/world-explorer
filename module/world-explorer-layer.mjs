@@ -30,7 +30,7 @@ export const DEFAULT_SETTINGS = {
  * The primary canvas layer is host to the background, and the actual token/drawing/tile sprites.
  * The separate token/drawing/tiles layers in the interaction layer are specifically for drawing borders and rendering the hud.
  */
-export class WorldExplorerLayer extends InteractionLayer {
+export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     /**
      * Providing baseClass for proper 'name' support
      * @see InteractionLayer

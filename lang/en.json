@@ -13,7 +13,7 @@
                 "Name": "Grid Extended Reveal (Distance)",
                 "Hint": "Extends visibility of revealed grid spaces into adjacent spaces."
             },
-            "GM_Opacity": "Game Master Overlay Opacity",
+            "GM_Opacity": "GM Overlay Opacity",
             "Player_Opacity": "Player Overlay Opacity",
             "Persist_Explored_Areas": "Keep areas explored by tokens",
             "Position": {

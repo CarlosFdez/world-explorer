@@ -202,7 +202,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 });
 
 // Handle Control Changes
-Hooks.on('renderSceneControls', (controls) => {
+Hooks.on('activateSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
     const isExplorer = controls.control.name === "worldExplorer";

@@ -12,10 +12,14 @@ The module can be set to be enabled for a scene via the last tab in the scene se
 
 ![image](https://github.com/user-attachments/assets/814debd6-aab8-4e69-b355-d3f2dfc9d42b)
 
+### Separate Player and Gamemaster Opacities
+
 By default, the GM has 75% opacity and players have 100% opacity. While the GM can see what's underneath, the view is completely blocked for players unless you set it otherwise. The GM can change their own opacity from the canvas controls whenever they want.
 
 ![image](https://github.com/user-attachments/assets/69b181b3-d62f-4496-b815-616fff2f5921)
 
 ![image](https://github.com/user-attachments/assets/3e7ef0e1-ff66-4c1f-a816-81aac0023ef7)
 
-While the module expects a manual approach, you can set the module to automatically reveal tiles that players have ventured through. It only performs these updates for tokens that have a player owner. Tokens used to represent wandering encounters won't get revealed to players.
+### Automatic Revealing
+
+While the module expects a manual approach, you can optionally set the module to automatically reveal tiles that players have ventured through. It only performs these updates for tokens that have a player owner. Tokens used to represent wandering encounters won't get revealed to players.

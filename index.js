@@ -136,7 +136,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 title: "WorldExplorer.Tools.Opacity",
                 icon: "fa-solid fa-adjust",
                 toggle: true,
-                onClick: () => {
+                onChange: () => {
                     const adjuster = OpacityGMAdjuster.instance;
                     adjuster.toggleVisibility();
                 },
@@ -149,40 +149,54 @@ Hooks.on("getSceneControlButtons", (controls) => {
                 onChange: async () => {
                     const code = foundry.utils.randomID(4).toLowerCase();
                     const content = `
-                        <p>${game.i18n.localize("WorldExplorer.ResetDialog.Content")}</p>
-                        <p>${game.i18n.format("WorldExplorer.ResetDialog.Confirm", { code })}</p>
-                        <p><input type="text"/></p>
+                        <div>${game.i18n.localize("WorldExplorer.ResetDialog.Content")}</div>
+                        <div>${game.i18n.format("WorldExplorer.ResetDialog.Confirm", { code })}</div>
+                        <div><input type="text"/></div>
                     `;
-
-                    new Dialog({
-                        title: game.i18n.localize("WorldExplorer.ResetDialog.Title"),
+                    const dialog = new foundry.applications.api.Dialog({
+                        window: {
+                            title: "WorldExplorer.ResetDialog.Title"
+                        },
                         content,
-                        buttons: {
-                            unexplored: {
-                                icon: '<i class="fa-solid fa-user-secret"></i>',
+                        modal: true,
+                        buttons: [
+                            {
+                                action: "unexplored",
+                                icon: "fa-solid fa-user-secret",
                                 label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Unexplored"),
                                 callback: () => canvas.worldExplorer.clear(),
                             },
-                            explored: {
-                                icon: '<i class="fa-solid fa-eye"></i>',
+                            {
+                                action: "explored",
+                                icon: "fa-solid fa-eye",
                                 label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Explored"),
                                 callback: () => canvas.worldExplorer.clear({ reveal: true }),
                             },
-                            cancel: {
-                                icon: '<i class="fa-solid fa-times"></i>',
+                            {
+                                action: "cancel",
+                                icon: "fa-solid fa-times",
                                 label: game.i18n.localize("Cancel"),
                             },
-                        },
-                        render: ($html) => {
-                            const $codeInput = $html.find("input");
-                            const $buttons = $html.find("button:not([data-button=cancel]");
-                            $buttons.prop("disabled", true);
-                            $codeInput.on("input", () => {
-                                const matches = $codeInput.val().trim() === code; 
-                                $buttons.prop("disabled", !matches);
-                            })
-                        },
-                    }).render(true);
+                        ],
+                    });
+
+                    // Lock buttons until the code matches
+                    dialog.addEventListener("render", () => {
+                        const element = dialog.element;
+                        const codeInput = element.querySelector("input");
+                        const buttons = element.querySelectorAll("button:not([data-action=cancel],[data-action=close])");
+                        for (const button of buttons) {
+                            button.disabled = true;
+                        }
+                        codeInput.addEventListener("input", () => {
+                            const matches = codeInput.value.trim() === code;
+                            for (const button of buttons) {
+                                button.disabled = !matches;
+                            }
+                        });
+                    })
+
+                    dialog.render({ force: true });
                 },
             }
         },

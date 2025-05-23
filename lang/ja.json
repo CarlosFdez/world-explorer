@@ -1,8 +1,7 @@
 {
     "WorldExplorer": {
         "Name": "ワールドマスク",
-        "Settings": {
-        },
+        "Settings": {},
         "SceneSettings": {
             "Description": "ワールドマスクの設定",
             "Enabled": "このシーンでModを使用する",
@@ -11,7 +10,15 @@
             "Reveal": "コマ視認距離",
             "GM_Opacity": "GMのマスクの不透明度",
             "Player_Opacity": "PLのマスクの不透明度",
-            "Persist_Explored_Areas": "コマが見たマスクを記憶する"
+            "Persist_Explored_Areas": "コマが見たマスクを記憶する",
+            "blurRadius": {
+                "Label": "ぼかし半径",
+                "Hint": "オーバーレイに適用されるぼかし効果の半径です。"
+            },
+            "blurQuality": {
+                "Label": "ぼかし品質",
+                "Hint": "値が高いとパフォーマンスに影響する場合があります。ご注意ください。"
+            }
         },
         "Tools": {
             "Toggle": "タイル切替",

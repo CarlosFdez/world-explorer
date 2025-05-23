@@ -1,8 +1,7 @@
 {
     "WorldExplorer": {
         "Name": "World Explorer",
-        "Settings": {
-        },
+        "Settings": {},
         "SceneSettings": {
             "Description": "Configure settings for the World Explorer module",
             "Enabled": "Enable the module to work for this scene",
@@ -25,6 +24,14 @@
                     "behindTokens": "Cover the map, non-overhead tiles, and drawings",
                     "front": "Cover everything except grid"
                 }
+            },
+            "blurRadius": {
+                "Label": "Blur Radius",
+                "Hint": "The radius of the blur effect applied to the overlay."
+            },
+            "blurQuality": {
+                "Label": "Blur Quality",
+                "Hint": "High values could impact performance. Be careful."
             }
         },
         "Tools": {

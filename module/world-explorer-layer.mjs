@@ -17,6 +17,10 @@ export const DEFAULT_SETTINGS = {
     opacityPlayer: 1,
     persistExploredAreas: false,
     position: "behindDrawings",
+    blur: {
+        radius: 0,
+        quality: 1,
+    },
 };
 
 // DEV NOTE: On sorting layers
@@ -65,7 +69,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.state = {};
     }
 
-    /** Any settings we are currently previewing. Currently unused, will be used once we're mot familiar with the scene config preview */ 
+    /** Any settings we are currently previewing. Currently unused, will be used once we're mot familiar with the scene config preview */
     previewSettings = {};
 
     /** @returns {WorldExplorerFlags} */
@@ -98,7 +102,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     set enabled(value) {
         this._enabled = !!value;
         this.visible = !!value;
-        
+
         if (value) {
             this.refreshOverlay();
             this.refreshMask();
@@ -124,7 +128,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         })
         this.maskSprite = new PIXI.Sprite();
         this.maskSprite.texture = this.maskTexture;
-        
+
         // Create the overlay
         this.addChild(this.overlayBackground);
         this.addChild(this.fogSprite);
@@ -146,7 +150,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const scene = canvas.scene;
         this.scene = scene;
         this.updater = new SceneUpdater(scene);
-        
+
         // Create sprite to draw fog of war image over. Because of load delays, create this first
         // It will get added to the overlay later
         const dimensions = canvas.dimensions;
@@ -203,7 +207,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
-    refreshImage(image=null) {
+    refreshImage(image = null) {
         image = this.image ?? image;
         if (this.enabled && image) {
             foundry.canvas.loadTexture(image).then((texture) => {
@@ -259,11 +263,32 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
         const { sceneRect } = canvas.dimensions;
         graphic.position.set(-sceneRect.x, -sceneRect.y);
-        
+
         graphic.endFill();
-        canvas.app.renderer.render(graphic, { renderTexture: this.maskTexture });
-        this.maskSprite.position.set(sceneRect.x, sceneRect.y);
+        // --- Render to a temporary render texture ---
+        const renderer = canvas.app.renderer;
+        const tempRT = PIXI.RenderTexture.create({
+            width: this.maskTexture.width,
+            height: this.maskTexture.height
+        });
+        renderer.render(graphic, { renderTexture: tempRT });
         graphic.destroy();
+        // --- Create a sprite from the temp render texture and blur it ---
+        const tempSprite = new PIXI.Sprite(tempRT);
+
+        if (this.settings.blur.radius > 0) {
+            const blur = new PIXI.filters.BlurFilter(this.settings.blur.radius);
+            blur.quality = this.settings.blur.quality;           // Higher value = smoother blur, but more GPU cost (default is 1)
+            blur.repeatEdgePixels = true; // Prevents transparent edges at the border (default is false)
+            tempSprite.filters = [blur];
+        }
+
+        // --- Render the blurred sprite to the actual mask texture ---
+        renderer.render(tempSprite, { renderTexture: this.maskTexture, clear: true });
+        tempSprite.destroy();
+        tempRT.destroy();
+
+        this.maskSprite.position.set(sceneRect.x, sceneRect.y);
     }
 
     /** Returns the grid reveal distance in canvas coordinates (if configured) */
@@ -329,7 +354,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const renderHighlight = (position, reveal) => {
             const { x, y } = canvas.grid.getTopLeftPoint(position);
             this.highlightLayer.clear();
-            
+
             // In certain modes, we only go one way, check if the operation is valid
             const canReveal = ["toggle", "reveal"].includes(this.state.tool);
             const canHide = ["toggle", "hide"].includes(this.state.tool);
@@ -352,7 +377,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             draggingOnCanvas = true;
             const canReveal = ["toggle", "reveal"].includes(this.state.tool);
             const canHide = ["toggle", "hide"].includes(this.state.tool);
-            
+
             if (event.data.button === 0) {
                 const coords = event.data.getLocalPosition(canvas.app.stage);
                 const revealed = this.isRevealed(coords);

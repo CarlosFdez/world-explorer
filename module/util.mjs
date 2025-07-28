@@ -72,6 +72,6 @@ export function uniqBy(arr, fn) {
     }, []);
 }
 
-export function uniq(arr) {
-    return uniqBy(arr, String);
+export function uniqPosition(arr) {
+    return uniqBy(arr, (p) => String(p.slice(0,-1)));
 }

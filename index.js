@@ -15,6 +15,7 @@ Hooks.on("init", async () => {
         group: "primary",
     };
 
+    const { SceneConfig } = foundry.applications.sheets;
     // Add the world explorer tab and config to the scene config
     // We need to make sure the world explorer tab renders before the footer
     const label = game.i18n.localize("WorldExplorer.Name");
@@ -50,7 +51,7 @@ Hooks.on("canvasReady", () => {
 Hooks.on("createToken", (token) => {
     updateForToken(token);
     if (canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+        canvas.worldExplorer.refreshMasks();
     }
 });
 
@@ -70,7 +71,7 @@ Hooks.on("refreshToken", (token, options) => {
 
 Hooks.on("deleteToken", () => {
     if (canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+        canvas.worldExplorer.refreshMasks();
     }
 });
 
@@ -240,6 +241,6 @@ function updateForToken(token, data={}) {
 
 const refreshThrottled = foundry.utils.throttle(() => {
     if (canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+        canvas.worldExplorer.refreshMasks();
     }
 }, 30);

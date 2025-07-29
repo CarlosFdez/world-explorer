@@ -142,7 +142,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.addChild(this.hiddenTiles);
         this.addChild(this.hiddenTiles.mask);
 
-        // Graphic to cover the partially revealed tiles (doesn't need an image texture, so use sprite)
+        // Graphic to cover the partially revealed tiles (doesn't need an image texture, so use Graphics)
         // Needs to be separate, for we want it to have a different color
         this.partialTiles = new PIXI.Graphics();
         // Create a separate mask for it, as it will also have separate transparency so it can overlay the image texture
@@ -558,9 +558,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      */
     _getPlainTexture() {
         const { sceneRect } = canvas.dimensions;
+        // Taken from SimpleFog - a way to deal with high resolution scenes and not run out of memory
+        let res = 1.0;
+        if (sceneRect.width * sceneRect.height > 16000 ** 2) res = 0.25;
+        else if (sceneRect.width * sceneRect.height > 8000 ** 2) res = 0.5;
+
         return PIXI.RenderTexture.create({
             width: sceneRect.width,
             height: sceneRect.height,
+            resolution: res,
         });
     }
 

@@ -122,7 +122,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
     controls.worldExplorer = {
         name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),
-        icon: "fa-solid fa-map",
+        icon: "fa-solid fa-globe",
         layer: "worldExplorer",
         onChange: (_event, active) => {
             if (active) canvas.worldExplorer.activate();
@@ -188,7 +188,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                             },
                             {
                                 action: "partial",
-                                icon: "fa-solid fa-cloud-fog",
+                                icon: "fa-duotone fa-cloud",
                                 label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Partial"),
                                 callback: () => canvas.worldExplorer.clear({ partial: true }),
                             },

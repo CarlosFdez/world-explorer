@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
 const fapi = foundry.applications.api;
 
 export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Application) {
@@ -16,7 +17,7 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
         },
         position: {
             width: 400,
-            height: 38,
+            height: 80,
         }
     }
 
@@ -33,6 +34,7 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
         const flags = this.scene.flags["world-explorer"] ?? {};
         return {
             opacityGM: flags.opacityGM ?? DEFAULT_SETTINGS.opacityGM,
+            partialOpacityGM: flags.partialOpacityGM ?? DEFAULT_SETTINGS.partialOpacityGM,
         };
     }
 
@@ -55,16 +57,16 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
             element.style.top = `${bounds.top}px`;
         }
 
-        const slider = element.querySelector("[type=range]");
-        slider?.addEventListener("input", (event) => {
+        element.addEventListener("input", (event) => {
             const value = Number(event.target.value);
-            this.scene.update({ "flags.world-explorer.opacityGM": value });
+            const updateId = event.target.parentNode.name;
+            this.scene.update({ [updateId]: value });
         });
     }
 
-    detectClose(controls) {
-        if (controls.control.name !== "worldExplorer" && this.rendered) {
-            $("#world-explorer-opacity-adjuster").fadeOut(() => {
+    detectClose(controls = {}) {
+        if (controls.control?.name !== "worldExplorer" && this.rendered) {
+            $(`#${this.id}`).fadeOut(() => {
                 this.close({ force: true });
             });
         }
@@ -72,12 +74,10 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
 
     toggleVisibility() {
         if (this.rendered) {
-            $("#world-explorer-opacity-adjuster").fadeOut(() => {
-                this.close({ force: true });
-            });
+            this.detectClose();
         } else {
             this.render({ force: true, scene: canvas.scene }).then(() => {
-                $("#world-explorer-opacity-adjuster").hide().fadeIn();
+                $(`#${this.id}`).hide().fadeIn({duration: 250});
             });
         }
     }

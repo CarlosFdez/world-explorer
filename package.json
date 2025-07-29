@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/CarlosFdez/world-explorer#readme",
   "devDependencies": {
-    "pixi.js": "^7.2.4",
+    "pixi.js": "^7.4.3",
     "prompts": "^2.4.2",
     "typescript": "^4.7.4"
   }

@@ -1,8 +1,8 @@
 /**
- * 
- * @param {unknown} object 
- * @param {{ before?: string, after?: string, key: string, value: unknown }} options 
- * @returns 
+ *
+ * @param {unknown} object
+ * @param {{ before?: string, after?: string, key: string, value: unknown }} options
+ * @returns
  */
 export function insertIntoObject(object, options) {
     const result = {};
@@ -72,6 +72,6 @@ export function uniqBy(arr, fn) {
     }, []);
 }
 
-export function uniq(arr) {
-    return uniqBy(arr, String);
+export function uniqPosition(arr) {
+    return uniqBy(arr, (p) => String(p.slice(0,-1)));
 }

@@ -15,6 +15,7 @@ Hooks.on("init", async () => {
         group: "primary",
     };
 
+    const { SceneConfig } = foundry.applications.sheets;
     // Add the world explorer tab and config to the scene config
     // We need to make sure the world explorer tab renders before the footer
     const label = game.i18n.localize("WorldExplorer.Name");
@@ -31,11 +32,16 @@ Hooks.on("init", async () => {
     SceneConfig.prototype._preparePartContext = async function(partId, context, options) {
         if (partId === "worldExplorer") {
             return {
-                ...DEFAULT_SETTINGS, 
+                ...DEFAULT_SETTINGS,
                 ...this.document.flags["world-explorer"],
+                units: this.document.grid.units,
                 POSITION_OPTIONS,
                 document: this.document,
                 tab: context.tabs[partId],
+                roles: {
+                    gm: game.i18n.localize("USER.RoleGamemaster"),
+                    player: game.i18n.localize("USER.RolePlayer"),
+                },
             };
         }
 
@@ -43,14 +49,15 @@ Hooks.on("init", async () => {
     }
 });
 
-Hooks.on("canvasReady", () => {
+Hooks.on("canvasReady", (canvas) => {
     canvas.worldExplorer?.onCanvasReady();
+    OpacityGMAdjuster.instance?.detectClose();
 });
 
 Hooks.on("createToken", (token) => {
     updateForToken(token);
     if (canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+        canvas.worldExplorer.refreshMasks();
     }
 });
 
@@ -70,20 +77,20 @@ Hooks.on("refreshToken", (token, options) => {
 
 Hooks.on("deleteToken", () => {
     if (canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+        canvas.worldExplorer.refreshMasks();
     }
 });
 
 Hooks.on("updateScene", (scene, data) => {
     // Skip if the updated scene isn't the current one
     if (scene.id !== canvas.scene.id) return;
-    
+
     if (data.flags && "world-explorer" in data.flags) {
         const worldExplorerFlags = data.flags["world-explorer"];
 
         // If the only change was revealed positions, do the throttled refresh to not interfere with token moving
-        if (worldExplorerFlags.revealedPositions && Object.keys(worldExplorerFlags).length === 1) {
-            refreshThrottled();
+        if (worldExplorerFlags.gridPositions && Object.keys(worldExplorerFlags).length === 1) {
+            refreshThrottled(true);
         } else {
             canvas.worldExplorer?.update();
         }
@@ -102,12 +109,20 @@ Hooks.on("updateScene", (scene, data) => {
 
 // Add Controls
 Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
+    if (!game.user.isGM) return;
+    if (!canvas.worldExplorer?.enabled) {
+        if (canvas.worldExplorer?.active) {
+            // World Explorer tools active, but not enabled for this scene, thus
+            // activate top (token) controls instead, so the scene doesn't fail to load
+            canvas.tokens.activate();
+        }
+        return;
+    }
 
     controls.worldExplorer = {
         name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),
-        icon: "fa-solid fa-map",
+        icon: "fa-solid fa-globe",
         layer: "worldExplorer",
         onChange: (_event, active) => {
             if (active) canvas.worldExplorer.activate();
@@ -116,22 +131,27 @@ Hooks.on("getSceneControlButtons", (controls) => {
             toggle: {
                 name: "toggle",
                 title: "WorldExplorer.Tools.Toggle",
-                icon: "fa-solid fa-random",
+                icon: "fa-solid fa-shuffle",
             },
             reveal: {
                 name: "reveal",
                 title: "WorldExplorer.Tools.Reveal",
-                icon: "fa-solid fa-paint-brush"
+                icon: "fa-thin fa-grid-2-plus"
+            },
+            partial: {
+                name: "partial",
+                title: "WorldExplorer.Tools.Partial",
+                icon: "fa-duotone fa-grid-2-plus"
             },
             hide: {
                 name: "hide",
                 title: "WorldExplorer.Tools.Hide",
-                icon: "fa-solid fa-eraser"
+                icon: "fa-solid fa-grid-2-plus"
             },
             opacity: {
                 name: "opacity",
-                title: "WorldExplorer.Tools.Opacity",
-                icon: "fa-solid fa-adjust",
+                title: "WorldExplorer.Tools.Opacity.Title",
+                icon: "fa-duotone fa-eye-low-vision",
                 toggle: true,
                 onChange: () => {
                     const adjuster = OpacityGMAdjuster.instance;
@@ -152,7 +172,10 @@ Hooks.on("getSceneControlButtons", (controls) => {
                     `;
                     const dialog = new foundry.applications.api.Dialog({
                         window: {
-                            title: "WorldExplorer.ResetDialog.Title"
+                            title: "WorldExplorer.ResetDialog.Title",
+                        },
+                        position: {
+                            width: 500,
                         },
                         content,
                         modal: true,
@@ -164,6 +187,12 @@ Hooks.on("getSceneControlButtons", (controls) => {
                                 callback: () => canvas.worldExplorer.clear(),
                             },
                             {
+                                action: "partial",
+                                icon: "fa-duotone fa-cloud",
+                                label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Partial"),
+                                callback: () => canvas.worldExplorer.clear({ partial: true }),
+                            },
+                            {
                                 action: "explored",
                                 icon: "fa-solid fa-eye",
                                 label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Explored"),
@@ -171,7 +200,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                             },
                             {
                                 action: "cancel",
-                                icon: "fa-solid fa-times",
+                                icon: "fa-solid fa-xmark",
                                 label: game.i18n.localize("Cancel"),
                             },
                         ],
@@ -205,13 +234,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 Hooks.on('activateSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
-    const isExplorer = controls.control.name === "worldExplorer";
-    const isEditTool = ["toggle", "reveal", "hide"].includes(controls.tool.name);
-    if (isEditTool && isExplorer) {
-        canvas.worldExplorer.startEditing(controls.tool.name);
-    } else {
-        canvas.worldExplorer.stopEditing();
-    }
+    canvas.worldExplorer?.activateEditingControls(controls.tool.name);
 
     OpacityGMAdjuster.instance?.detectClose(controls);
 });
@@ -235,11 +258,11 @@ function updateForToken(token, data={}) {
             y: (data.y ?? token.y) + ((token.parent?.dimensions?.size / 2) ?? 0),
         };
         canvas.worldExplorer.reveal(center);
-    } 
+    }
 }
 
-const refreshThrottled = foundry.utils.throttle(() => {
-    if (canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+const refreshThrottled = foundry.utils.throttle((force) => {
+    if (force || canvas.worldExplorer?.settings.revealRadius) {
+        canvas.worldExplorer.refreshMasks();
     }
 }, 30);

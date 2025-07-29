@@ -2,7 +2,7 @@
   "id": "world-explorer",
   "title": "World Explorer",
   "description": "Manual reveal of background image for map traversal tracking",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "authors": [
     {
       "name": "Supe",
@@ -32,7 +32,7 @@
     }
   ],
   "styles": [
-    "styles/style.css"
+    "styles/world-explorer.css"
   ],
   "url": "https://github.com/CarlosFdez/world-explorer",
   "manifest": "https://github.com/CarlosFdez/world-explorer/releases/latest/download/module.json",

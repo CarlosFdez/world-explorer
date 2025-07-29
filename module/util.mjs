@@ -1,8 +1,8 @@
 /**
- * 
- * @param {unknown} object 
- * @param {{ before?: string, after?: string, key: string, value: unknown }} options 
- * @returns 
+ *
+ * @param {unknown} object
+ * @param {{ before?: string, after?: string, key: string, value: unknown }} options
+ * @returns
  */
 export function insertIntoObject(object, options) {
     const result = {};

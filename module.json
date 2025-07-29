@@ -32,7 +32,7 @@
     }
   ],
   "styles": [
-    "styles/style.css"
+    "styles/world-explorer.css"
   ],
   "url": "https://github.com/CarlosFdez/world-explorer",
   "manifest": "https://github.com/CarlosFdez/world-explorer/releases/latest/download/module.json",

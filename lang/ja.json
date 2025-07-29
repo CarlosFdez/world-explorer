@@ -1,17 +1,23 @@
 {
     "WorldExplorer": {
         "Name": "ワールドマスク",
-        "Settings": {
-        },
         "SceneSettings": {
-            "Description": "ワールドマスクの設定",
             "Enabled": "このシーンでModを使用する",
-            "Color": "マスク色",
-            "Image": "マスク画像",
-            "Reveal": "コマ視認距離",
-            "GM_Opacity": "GMのマスクの不透明度",
-            "Player_Opacity": "PLのマスクの不透明度",
-            "Persist_Explored_Areas": "コマが見たマスクを記憶する"
+            "Image": {
+                "Label": "マスク画像"
+            },
+            "Colors": {
+                "Overlay": {
+                    "Label": "マスク色"
+                }
+            },
+            "Opacity": {
+                "Title": "{role}のマスクの不透明度"
+            },
+            "TokenInteractions" : {
+                "TokenReveal": "コマ視認距離",
+                "PersistExplored": "コマが見たマスクを記憶する"
+            }
         },
         "Tools": {
             "Toggle": "タイル切替",

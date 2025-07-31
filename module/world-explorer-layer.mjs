@@ -117,19 +117,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
         // Create mask (to punch holes in to reveal tiles/players)
-        const dimensions = canvas.dimensions;
-        this.maskTexture = PIXI.RenderTexture.create({
-            width: dimensions.sceneRect.width,
-            height: dimensions.sceneRect.height,
-        })
-        this.maskSprite = new PIXI.Sprite();
-        this.maskSprite.texture = this.maskTexture;
+        const { sceneRect } = canvas.dimensions;
+        this.maskTexture = _getPlainTexture();
+        this.mask = new PIXI.Sprite(this.maskTexture);
+        this.mask.position.set(sceneRect.x, sceneRect.y);
         
         // Create the overlay
         this.addChild(this.overlayBackground);
         this.addChild(this.fogSprite);
-        this.addChild(this.maskSprite);
-        this.mask = this.maskSprite;
+        this.addChild(this.mask);
 
         const flags = this.settings;
         this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
@@ -415,6 +411,23 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     _getIndex(...point) {
         const { i, j } = canvas.grid.getOffset({ x: point[0], y: point[1] });
         return this.revealed.findIndex((r) => r.i === i && r.j === j);
+    }
+
+    /**
+     * Gets a simple PIXI texture sized to the canvas
+     */
+    _getPlainTexture() {
+        const { sceneRect } = canvas.dimensions;
+        // Taken from SimpleFog - a way to deal with high resolution scenes and not run out of memory
+        let res = 1.0;
+        if (sceneRect.width * sceneRect.height > 16000 ** 2) res = 0.25;
+        else if (sceneRect.width * sceneRect.height > 8000 ** 2) res = 0.5;
+
+        return PIXI.RenderTexture.create({
+            width: sceneRect.width,
+            height: sceneRect.height,
+            resolution: res,
+        });
     }
 
     /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */

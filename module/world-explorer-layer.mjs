@@ -1,5 +1,5 @@
 import { SceneUpdater } from "./scene-updater.mjs";
-import { createPlainTexture } from "./utils.mjs";
+import { createPlainTexture } from "./util.mjs";
 
 const MODULE = "world-explorer";
 
@@ -268,7 +268,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         
         graphic.endFill();
         canvas.app.renderer.render(graphic, { renderTexture: this.maskTexture });
-        this.maskSprite.position.set(sceneRect.x, sceneRect.y);
+        this.mask.position.set(sceneRect.x, sceneRect.y);
         graphic.destroy();
     }
 

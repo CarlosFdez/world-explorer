@@ -19,7 +19,7 @@ Hooks.on("init", async () => {
     // Add the world explorer tab and config to the scene config
     // We need to make sure the world explorer tab renders before the footer
     const label = game.i18n.localize("WorldExplorer.Name");
-    SceneConfig.TABS.sheet.tabs.push({ id: "worldExplorer", label, icon: "fa-solid fa-globe" });
+    SceneConfig.TABS.sheet.tabs.push({ id: "worldExplorer", label, icon: "fa-regular fa-map-location-dot" });
     const footerPart = SceneConfig.PARTS.footer;
     delete SceneConfig.PARTS.footer;
     SceneConfig.PARTS.worldExplorer = {
@@ -117,7 +117,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
     controls.worldExplorer = {
         name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),
-        icon: "fa-solid fa-globe",
+        icon: "fa-regular fa-map-location-dot",
         layer: "worldExplorer",
         onChange: (_event, active) => {
             if (active) canvas.worldExplorer.activate();

@@ -108,7 +108,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
     controls.worldExplorer = {
         name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),
-        icon: "fa-solid fa-map",
+        icon: "fa-solid fa-globe",
         layer: "worldExplorer",
         onChange: (_event, active) => {
             if (active) canvas.worldExplorer.activate();

@@ -84,7 +84,7 @@ Hooks.on("updateScene", (scene, data) => {
 
         // If the only change was revealed positions, do the throttled refresh to not interfere with token moving
         if (worldExplorerFlags.revealedPositions && Object.keys(worldExplorerFlags).length === 1) {
-            refreshThrottled();
+            refreshThrottled(true);
         } else {
             canvas.worldExplorer?.update();
         }
@@ -239,8 +239,8 @@ function updateForToken(token, data={}) {
     } 
 }
 
-const refreshThrottled = foundry.utils.throttle(() => {
-    if (canvas.worldExplorer?.settings.revealRadius) {
+const refreshThrottled = foundry.utils.throttle((force) => {
+    if (force || canvas.worldExplorer?.settings.revealRadius) {
         canvas.worldExplorer.refreshMask();
     }
 }, 30);

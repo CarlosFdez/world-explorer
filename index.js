@@ -215,7 +215,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 Hooks.on('activateSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
-    canvas.worldExplorer?.activateEditingControls(controls.tool.name);
+    canvas.worldExplorer?.onChangeTool(controls.tool.name);
 
     OpacityGMAdjuster.instance?.detectClose(controls);
 });

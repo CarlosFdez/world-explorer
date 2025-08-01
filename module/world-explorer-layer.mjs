@@ -184,7 +184,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
-    activateEditingControls(toolName) {
+    onChangeTool(toolName) {
         const isEditTool = ["toggle", "reveal", "partial", "hide"].includes(toolName);
         if (this.active && isEditTool) {
             canvas.worldExplorer.startEditing(toolName);
@@ -318,7 +318,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.refreshMask();
         this.registerMouseListeners();
         // enable the currently select tool if its one of World Explorer's
-        if (this.active) this.activateEditingControls(game.activeTool);
+        if (this.active) this.onChangeTool(game.activeTool);
     }
 
     registerMouseListeners() {

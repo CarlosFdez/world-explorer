@@ -66,7 +66,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.state = {};
     }
 
-    /** Any settings we are currently previewing. Currently unused, will be used once we're mot familiar with the scene config preview */ 
+    /** Any settings we are currently previewing. Currently unused, will be used once we're more familiar with the scene config preview */ 
     previewSettings = {};
 
     /** @returns {WorldExplorerFlags} */

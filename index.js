@@ -117,7 +117,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
             toggle: {
                 name: "toggle",
                 title: "WorldExplorer.Tools.Toggle",
-                icon: "fa-solid fa-random",
+                icon: "fa-solid fa-shuffle",
             },
             reveal: {
                 name: "reveal",
@@ -172,7 +172,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                             },
                             {
                                 action: "cancel",
-                                icon: "fa-solid fa-times",
+                                icon: "fa-solid fa-xmark",
                                 label: game.i18n.localize("Cancel"),
                             },
                         ],

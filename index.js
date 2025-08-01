@@ -19,7 +19,7 @@ Hooks.on("init", async () => {
     // Add the world explorer tab and config to the scene config
     // We need to make sure the world explorer tab renders before the footer
     const label = game.i18n.localize("WorldExplorer.Name");
-    SceneConfig.TABS.sheet.tabs.push({ id: "worldExplorer", label, icon: "fa-solid fa-globe" });
+    SceneConfig.TABS.sheet.tabs.push({ id: "worldExplorer", label, icon: "fa-solid fa-map-location-dot" });
     const footerPart = SceneConfig.PARTS.footer;
     delete SceneConfig.PARTS.footer;
     SceneConfig.PARTS.worldExplorer = {
@@ -44,8 +44,9 @@ Hooks.on("init", async () => {
     }
 });
 
-Hooks.on("canvasReady", () => {
+Hooks.on("canvasReady", (canvas) => {
     canvas.worldExplorer?.onCanvasReady();
+    OpacityGMAdjuster.instance?.detectClose();
 });
 
 Hooks.on("createToken", (token) => {
@@ -84,7 +85,7 @@ Hooks.on("updateScene", (scene, data) => {
 
         // If the only change was revealed positions, do the throttled refresh to not interfere with token moving
         if (worldExplorerFlags.revealedPositions && Object.keys(worldExplorerFlags).length === 1) {
-            refreshThrottled();
+            refreshThrottled(true);
         } else {
             canvas.worldExplorer?.update();
         }
@@ -103,12 +104,20 @@ Hooks.on("updateScene", (scene, data) => {
 
 // Add Controls
 Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
+    if (!game.user.isGM) return;
+    if (!canvas.worldExplorer?.enabled) {
+        if (canvas.worldExplorer?.active) {
+            // World Explorer tools active, but not enabled for this scene, thus
+            // activate top (token) controls instead, so the scene doesn't fail to load
+            canvas.tokens.activate();
+        }
+        return;
+    }
 
     controls.worldExplorer = {
         name: "worldExplorer",
         title: game.i18n.localize("WorldExplorer.Name"),
-        icon: "fa-solid fa-map",
+        icon: "fa-solid fa-map-location-dot",
         layer: "worldExplorer",
         onChange: (_event, active) => {
             if (active) canvas.worldExplorer.activate();
@@ -117,7 +126,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
             toggle: {
                 name: "toggle",
                 title: "WorldExplorer.Tools.Toggle",
-                icon: "fa-solid fa-random",
+                icon: "fa-solid fa-shuffle",
             },
             reveal: {
                 name: "reveal",
@@ -172,7 +181,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
                             },
                             {
                                 action: "cancel",
-                                icon: "fa-solid fa-times",
+                                icon: "fa-solid fa-xmark",
                                 label: game.i18n.localize("Cancel"),
                             },
                         ],
@@ -206,13 +215,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 Hooks.on('activateSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
-    const isExplorer = controls.control.name === "worldExplorer";
-    const isEditTool = ["toggle", "reveal", "hide"].includes(controls.tool.name);
-    if (isEditTool && isExplorer) {
-        canvas.worldExplorer.startEditing(controls.tool.name);
-    } else {
-        canvas.worldExplorer.stopEditing();
-    }
+    canvas.worldExplorer?.onChangeTool(controls.tool.name);
 
     OpacityGMAdjuster.instance?.detectClose(controls);
 });
@@ -239,8 +242,8 @@ function updateForToken(token, data={}) {
     } 
 }
 
-const refreshThrottled = foundry.utils.throttle(() => {
-    if (canvas.worldExplorer?.settings.revealRadius) {
+const refreshThrottled = foundry.utils.throttle((force) => {
+    if (force || canvas.worldExplorer?.settings.revealRadius) {
         canvas.worldExplorer.refreshMask();
     }
 }, 30);

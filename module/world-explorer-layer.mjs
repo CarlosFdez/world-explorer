@@ -66,7 +66,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.state = {};
     }
 
-    /** Any settings we are currently previewing. Currently unused, will be used once we're mot familiar with the scene config preview */ 
+    /** Any settings we are currently previewing. Currently unused, will be used once we're more familiar with the scene config preview */ 
     previewSettings = {};
 
     /** @returns {WorldExplorerFlags} */
@@ -181,6 +181,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
         if (imageChanged || !flags.enabled || becameEnabled) {
             this.refreshImage();
+        }
+    }
+
+    onChangeTool(toolName) {
+        const isEditTool = ["toggle", "reveal", "partial", "hide"].includes(toolName);
+        if (this.active && isEditTool) {
+            canvas.worldExplorer.startEditing(toolName);
+        } else {
+            canvas.worldExplorer.stopEditing();
         }
     }
 
@@ -308,6 +317,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     onCanvasReady() {
         this.refreshMask();
         this.registerMouseListeners();
+        // enable the currently select tool if its one of World Explorer's
+        if (this.active) this.onChangeTool(game.activeTool);
     }
 
     registerMouseListeners() {

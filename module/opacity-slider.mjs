@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from "./world-explorer-layer.mjs";
 const fapi = foundry.applications.api;
 
 export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Application) {

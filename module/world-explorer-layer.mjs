@@ -1,4 +1,5 @@
 import { SceneUpdater } from "./scene-updater.mjs";
+import { createPlainTexture } from "./utils.mjs";
 
 const MODULE = "world-explorer";
 
@@ -21,7 +22,7 @@ export const DEFAULT_SETTINGS = {
 
 // DEV NOTE: On sorting layers
 // Elements within the primary canvas group are sorted via the following heuristics:
-// 1. The object's elevation property. Drawables use their ZIndex, Tiles have a fixed value if overhead
+// 1. The object's elevation property. Drawings use their Z-Index, Tiles have a fixed value if overhead
 // 2. The layer's static PRIMARY_SORT_ORDER.
 // 3. The object's sort property
 
@@ -118,7 +119,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
         // Create mask (to punch holes in to reveal tiles/players)
         const { sceneRect } = canvas.dimensions;
-        this.maskTexture = _getPlainTexture();
+        this.maskTexture = createPlainTexture();
         this.mask = new PIXI.Sprite(this.maskTexture);
         this.mask.position.set(sceneRect.x, sceneRect.y);
         
@@ -411,16 +412,6 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     _getIndex(...point) {
         const { i, j } = canvas.grid.getOffset({ x: point[0], y: point[1] });
         return this.revealed.findIndex((r) => r.i === i && r.j === j);
-    }
-
-    /**
-     * Gets a simple PIXI texture sized to the canvas. The resolution scales based on size to handle large scenes.
-     */
-    _getPlainTexture() {
-        const { width, height } = canvas.dimensions.sceneRect;
-        const area = width * height;
-        const resolution = area > 16000 ** 2 ? 0.25 : area > 8000 ** 2 ? 0.5 : 1.0;
-        return PIXI.RenderTexture.create({ width, height, resolution });
     }
 
     /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */

@@ -75,3 +75,13 @@ export function uniqBy(arr, fn) {
 export function uniq(arr) {
     return uniqBy(arr, String);
 }
+
+/**
+ * Creates a simple PIXI texture sized to the canvas. The resolution scales based on size to handle large scenes.
+ */
+export function createPlainTexture() {
+    const { width, height } = canvas.dimensions.sceneRect;
+    const area = width * height;
+    const resolution = area > 16000 ** 2 ? 0.25 : area > 8000 ** 2 ? 0.5 : 1.0;
+    return PIXI.RenderTexture.create({ width, height, resolution });
+}

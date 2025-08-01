@@ -44,8 +44,9 @@ Hooks.on("init", async () => {
     }
 });
 
-Hooks.on("canvasReady", () => {
+Hooks.on("canvasReady", (canvas) => {
     canvas.worldExplorer?.onCanvasReady();
+    OpacityGMAdjuster.instance?.detectClose();
 });
 
 Hooks.on("createToken", (token) => {
@@ -103,7 +104,15 @@ Hooks.on("updateScene", (scene, data) => {
 
 // Add Controls
 Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.user.isGM || !canvas.worldExplorer?.enabled) return;
+    if (!game.user.isGM) return;
+    if (!canvas.worldExplorer?.enabled) {
+        if (canvas.worldExplorer?.active) {
+            // World Explorer tools active, but not enabled for this scene, thus
+            // activate top (token) controls instead, so the scene doesn't fail to load
+            canvas.tokens.activate();
+        }
+        return;
+    }
 
     controls.worldExplorer = {
         name: "worldExplorer",
@@ -206,13 +215,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
 Hooks.on('activateSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
-    const isExplorer = controls.control.name === "worldExplorer";
-    const isEditTool = ["toggle", "reveal", "hide"].includes(controls.tool.name);
-    if (isEditTool && isExplorer) {
-        canvas.worldExplorer.startEditing(controls.tool.name);
-    } else {
-        canvas.worldExplorer.stopEditing();
-    }
+    canvas.worldExplorer?.activateEditingControls(controls.tool.name);
 
     OpacityGMAdjuster.instance?.detectClose(controls);
 });

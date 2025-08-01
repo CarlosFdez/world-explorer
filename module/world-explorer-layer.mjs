@@ -184,6 +184,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
+    activateEditingControls(toolName) {
+        const isEditTool = ["toggle", "reveal", "partial", "hide"].includes(toolName);
+        if (this.active && isEditTool) {
+            canvas.worldExplorer.startEditing(toolName);
+        } else {
+            canvas.worldExplorer.stopEditing();
+        }
+    }
+
     /** @param {EditingMode} mode */
     startEditing(mode) {
         this.state.clearing = true;
@@ -308,6 +317,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     onCanvasReady() {
         this.refreshMask();
         this.registerMouseListeners();
+        // enable the currently select tool if its one of World Explorer's
+        if (this.active) this.activateEditingControls(game.activeTool);
     }
 
     registerMouseListeners() {

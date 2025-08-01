@@ -414,20 +414,13 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     /**
-     * Gets a simple PIXI texture sized to the canvas
+     * Gets a simple PIXI texture sized to the canvas. The resolution scales based on size to handle large scenes.
      */
     _getPlainTexture() {
-        const { sceneRect } = canvas.dimensions;
-        // Taken from SimpleFog - a way to deal with high resolution scenes and not run out of memory
-        let res = 1.0;
-        if (sceneRect.width * sceneRect.height > 16000 ** 2) res = 0.25;
-        else if (sceneRect.width * sceneRect.height > 8000 ** 2) res = 0.5;
-
-        return PIXI.RenderTexture.create({
-            width: sceneRect.width,
-            height: sceneRect.height,
-            resolution: res,
-        });
+        const { width, height } = canvas.dimensions.sceneRect;
+        const area = width * height;
+        const resolution = area > 16000 ** 2 ? 0.25 : area > 8000 ** 2 ? 0.5 : 1.0;
+        return PIXI.RenderTexture.create({ width, height, resolution });
     }
 
     /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */

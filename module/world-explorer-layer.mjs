@@ -1,4 +1,5 @@
 import { SceneUpdater } from "./scene-updater.mjs";
+import { createPlainTexture } from "./utils.mjs";
 
 const MODULE = "world-explorer";
 
@@ -21,7 +22,7 @@ export const DEFAULT_SETTINGS = {
 
 // DEV NOTE: On sorting layers
 // Elements within the primary canvas group are sorted via the following heuristics:
-// 1. The object's elevation property. Drawables use their ZIndex, Tiles have a fixed value if overhead
+// 1. The object's elevation property. Drawings use their Z-Index, Tiles have a fixed value if overhead
 // 2. The layer's static PRIMARY_SORT_ORDER.
 // 3. The object's sort property
 
@@ -117,19 +118,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
 
         // Create mask (to punch holes in to reveal tiles/players)
-        const dimensions = canvas.dimensions;
-        this.maskTexture = PIXI.RenderTexture.create({
-            width: dimensions.sceneRect.width,
-            height: dimensions.sceneRect.height,
-        })
-        this.maskSprite = new PIXI.Sprite();
-        this.maskSprite.texture = this.maskTexture;
+        const { sceneRect } = canvas.dimensions;
+        this.maskTexture = createPlainTexture();
+        this.mask = new PIXI.Sprite(this.maskTexture);
+        this.mask.position.set(sceneRect.x, sceneRect.y);
         
         // Create the overlay
         this.addChild(this.overlayBackground);
         this.addChild(this.fogSprite);
-        this.addChild(this.maskSprite);
-        this.mask = this.maskSprite;
+        this.addChild(this.mask);
 
         const flags = this.settings;
         this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;

@@ -15,6 +15,7 @@ Hooks.on("init", async () => {
         group: "primary",
     };
 
+    const { SceneConfig } = foundry.applications.sheets;
     // Add the world explorer tab and config to the scene config
     // We need to make sure the world explorer tab renders before the footer
     const label = game.i18n.localize("WorldExplorer.Name");

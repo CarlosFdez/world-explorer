@@ -60,7 +60,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     constructor() {
         super();
-        this.color = "#000000";
+        this.color = DEFAULT_SETTINGS.color;
 
         /** @type {Partial<WorldExplorerState>} */
         this.state = {};
@@ -114,19 +114,19 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     initialize(options) {
-        this.overlayBackground = new PIXI.Graphics();
-        this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
-
-        // Create mask (to punch holes in to reveal tiles/players)
-        const { sceneRect } = canvas.dimensions;
-        this.maskTexture = createPlainTexture();
-        this.mask = new PIXI.Sprite(this.maskTexture);
-        this.mask.position.set(sceneRect.x, sceneRect.y);
-        
-        // Create the overlay
-        this.addChild(this.overlayBackground);
-        this.addChild(this.fogSprite);
-        this.addChild(this.mask);
+        const { x, y, width, height } = canvas.dimensions.sceneRect;
+        // Sprite to cover the hidden tiles. Fill with white texture, or image texture if one is set
+        this.hiddenTiles = new PIXI.Sprite(PIXI.Texture.WHITE);
+        this.hiddenTiles.position.set(x, y);
+        this.hiddenTiles.width = width;
+        this.hiddenTiles.height = height;
+        // Create a mask for it, with a texture we can reference later to update the mask
+        this.hiddenTilesMaskTexture = createPlainTexture();
+        this.hiddenTiles.mask = new PIXI.Sprite(this.hiddenTilesMaskTexture);
+        this.hiddenTiles.mask.position.set(x, y);
+        // Add to the layer
+        this.addChild(this.hiddenTiles);
+        this.addChild(this.hiddenTiles.mask);
 
         this.updateSettings();
 
@@ -137,14 +137,6 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const scene = canvas.scene;
         this.scene = scene;
         this.updater = new SceneUpdater(scene);
-        
-        // Create sprite to draw fog of war image over. Because of load delays, create this first
-        // It will get added to the overlay later
-        const dimensions = canvas.dimensions;
-        this.fogSprite = new PIXI.Sprite();
-        this.fogSprite.position.set(dimensions.sceneRect.x, dimensions.sceneRect.y);
-        this.fogSprite.width = dimensions.sceneRect.width;
-        this.fogSprite.height = dimensions.sceneRect.height;
 
         this.state = {};
         this.initialize();
@@ -169,6 +161,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.refreshMask();
         if (becameEnabled) {
             this.refreshOverlay();
+        } else {
+            this.refreshColors();
         }
         if (imageChanged || !flags.enabled || becameEnabled) {
             this.refreshImage();
@@ -178,7 +172,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     /** Set the settings to `this` on initialize and updates. */
     updateSettings() {
         const flags = this.settings;
-        this.hiddenAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
+        this.hiddenAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
         this.color = flags.color;
         this.image = flags.image;
         this._enabled = flags.enabled;
@@ -210,67 +204,84 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
-    refreshImage(image=null) {
-        image = this.image ?? image;
-        if (this.enabled && image) {
-            foundry.canvas.loadTexture(image).then((texture) => {
-                this.fogSprite.texture = texture;
+    refreshImage(image = null) {
+        if (image) this.image = image;
+        if (this.enabled && this.image) {
+            foundry.canvas.loadTexture(this.image).then((texture) => {
+                this.hiddenTiles.texture = texture;
             });
         } else {
-            this.fogSprite.texture = null;
+            this.hiddenTiles.texture = this.enabled ? PIXI.Texture.WHITE : null;
         }
     }
 
     refreshOverlay() {
+        if (!this.enabled) return;
+
+        // Keep this process for now, needed when adding partial tiles
+
+        this.refreshColors();
+    }
+
+    refreshColors() {
         if (!this.enabled || this.hiddenAlpha === 0) return;
-        this.overlayBackground.beginFill(0xFFFFFF);
-        this.overlayBackground.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
-        this.overlayBackground.endFill();
-        this.overlayBackground.tint = Color.from(this.color) ?? 0x000000;
+
+        // Set the color of the layers, but only if no image is present
+        if (!this.image) {
+            this.hiddenTiles.tint = Color.from(this.color);
+        } else {
+            // Reset the color if an image is present, otherwise it gets colored
+            this.hiddenTiles.tint = 0xFFFFFF;
+        }
     }
 
     refreshMask() {
         if (!this.enabled) return;
-        const graphic = new PIXI.Graphics();
-        graphic.beginFill(0xFFFFFF, this.hiddenAlpha);
-        graphic.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
-        graphic.endFill();
+        const { x, y, width, height } = canvas.dimensions.sceneRect;
 
-        graphic.beginFill(0x000000);
+        // Create mask for the hiddenTiles / image layer
+        const hiddenMask = new PIXI.Graphics();
+        hiddenMask.position.set(-x, -y);
 
-        // draw black over the tiles that are revealed
+        // Cover everything with the mask by painting it white
+        hiddenMask.beginFill(0xFFFFFF, this.hiddenAlpha);
+        hiddenMask.drawRect(x, y, width, height);
+        hiddenMask.endFill();
+
+        // Now uncover the revealed tiles by painting them black in the mask
+        hiddenMask.beginFill(0x000000);
+
+        // Do the revealed tiles, uncover them or the reveal radius in the main mask
         const gridRevealRadius = this.getGridRevealRadius();
         for (const position of this.revealed) {
-            const poly = this._getGridPolygon(position);
-            graphic.drawPolygon(poly);
-
-            // If we want grid elements to have an extended reveal, we need to draw those too
+            // Uncover circles if extend grid elements is set
             if (gridRevealRadius > 0) {
                 const { x, y } = canvas.grid.getCenterPoint(position);
-                graphic.drawCircle(x, y, gridRevealRadius);
+                hiddenMask.drawCircle(x, y, gridRevealRadius);
+            } else {
+                // Otherwise just uncover the revealed grid
+                const poly = this._getGridPolygon(position);
+                hiddenMask.drawPolygon(poly);
             }
         }
 
-        // draw black over observer tokens
+        // Uncover observer tokens, if set
         const tokenRevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
         if (tokenRevealRadius > 0) {
             for (const token of canvas.tokens.placeables) {
                 const document = token.document;
                 if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
-                    const x = token.center.x;
-                    const y = token.center.y;
-                    graphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
+                    const { x, y } = token.center;
+                    hiddenMask.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
                 }
             }
         }
 
-        const { sceneRect } = canvas.dimensions;
-        graphic.position.set(-sceneRect.x, -sceneRect.y);
-        
-        graphic.endFill();
-        canvas.app.renderer.render(graphic, { renderTexture: this.maskTexture });
-        this.mask.position.set(sceneRect.x, sceneRect.y);
-        graphic.destroy();
+        hiddenMask.endFill();
+
+        // Render the mask
+        canvas.app.renderer.render(hiddenMask, { renderTexture: this.hiddenTilesMaskTexture });
+        hiddenMask.destroy();
     }
 
     /** Returns the grid reveal distance in canvas coordinates (if configured) */

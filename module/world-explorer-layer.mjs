@@ -128,13 +128,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.addChild(this.fogSprite);
         this.addChild(this.mask);
 
-        const flags = this.settings;
-        this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
-        this.color = flags.color;
-        this.image = flags.image;
-        this._enabled = flags.enabled;
-
-        this.visible = this._enabled;
+        this.updateSettings();
 
         this.#migratePositions();
     }
@@ -169,11 +163,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const flags = this.settings;
         const imageChanged = this.image !== flags.image;
         const becameEnabled = !this.enabled && flags.enabled;
-        this.alpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
-        this.color = flags.color;
-        this.image = flags.image;
-        this._enabled = flags.enabled;
-        this.visible = this._enabled;
+
+        this.updateSettings();
 
         this.refreshMask();
         if (becameEnabled) {
@@ -182,6 +173,16 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         if (imageChanged || !flags.enabled || becameEnabled) {
             this.refreshImage();
         }
+    }
+
+    /** Set the settings to `this` on initialize and updates. */
+    updateSettings() {
+        const flags = this.settings;
+        this.hiddenAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? 1;
+        this.color = flags.color;
+        this.image = flags.image;
+        this._enabled = flags.enabled;
+        this.visible = this._enabled;
     }
 
     onChangeTool(toolName) {
@@ -221,7 +222,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     refreshOverlay() {
-        if (!this.enabled || this.alpha === 0) return;
+        if (!this.enabled || this.hiddenAlpha === 0) return;
         this.overlayBackground.beginFill(0xFFFFFF);
         this.overlayBackground.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
         this.overlayBackground.endFill();
@@ -229,9 +230,9 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     refreshMask() {
-        if (!this.enabled || this.alpha === 0) return;
+        if (!this.enabled) return;
         const graphic = new PIXI.Graphics();
-        graphic.beginFill(0xFFFFFF);
+        graphic.beginFill(0xFFFFFF, this.hiddenAlpha);
         graphic.drawRect(0, 0, canvas.dimensions.width, canvas.dimensions.height);
         graphic.endFill();
 

@@ -63,8 +63,8 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
         });
     }
 
-    detectClose(controls) {
-        if (controls.control.name !== "worldExplorer" && this.rendered) {
+    detectClose(controls = {}) {
+        if (controls.control?.name !== "worldExplorer" && this.rendered) {
             $("#world-explorer-opacity-adjuster").fadeOut(() => {
                 this.close({ force: true });
             });

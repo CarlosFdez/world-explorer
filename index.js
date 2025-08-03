@@ -46,7 +46,7 @@ Hooks.on("init", async () => {
 
 Hooks.on("canvasReady", (canvas) => {
     canvas.worldExplorer?.onCanvasReady();
-    OpacityGMAdjuster.instance?.detectClose();
+    OpacityGMAdjuster.instance?.close();
 });
 
 Hooks.on("createToken", (token) => {
@@ -216,8 +216,9 @@ Hooks.on('activateSceneControls', (controls) => {
     if (!canvas.worldExplorer) return;
 
     canvas.worldExplorer?.onChangeTool(controls.tool.name);
-
-    OpacityGMAdjuster.instance?.detectClose(controls);
+    if (controls.control.name !== "worldExplorer") {
+        OpacityGMAdjuster.instance?.close();
+    }
 });
 
 /** Refreshes the scene on token move, revealing a location if necessary */

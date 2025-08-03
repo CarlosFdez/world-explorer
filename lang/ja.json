@@ -1,10 +1,7 @@
 {
     "WorldExplorer": {
         "Name": "ワールドマスク",
-        "Settings": {
-        },
         "SceneSettings": {
-            "Description": "ワールドマスクの設定",
             "Enabled": "このシーンでModを使用する",
             "Color": "マスク色",
             "Image": "マスク画像",

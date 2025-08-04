@@ -38,9 +38,9 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
     }
 
     /** Render and replace the referenced scene */
-    async render(options) {
+    async render(options = {}) {
+        options.scene ??= canvas.scene;
         this.scene = options.scene;
-        if (!this.scene) return this;
         return super.render(options);
     }
 
@@ -63,21 +63,11 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
         });
     }
 
-    detectClose(controls = {}) {
-        if (controls.control?.name !== "worldExplorer" && this.rendered) {
-            $(`#${this.id}`).fadeOut(() => {
-                this.close({ force: true });
-            });
-        }
-    }
-
     toggleVisibility() {
         if (this.rendered) {
-            this.detectClose();
+            this.close();
         } else {
-            this.render({ force: true, scene: canvas.scene }).then(() => {
-                $(`#${this.id}`).hide().fadeIn({duration: 250});
-            });
+            this.render({ force: true });
         }
     }
 }

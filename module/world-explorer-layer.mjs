@@ -224,15 +224,10 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     refreshColors() {
-        if (!this.enabled || this.hiddenAlpha === 0) return;
+        if (!this.enabled) return;
 
         // Set the color of the layers, but only if no image is present
-        if (!this.image) {
-            this.hiddenTiles.tint = Color.from(this.color);
-        } else {
-            // Reset the color if an image is present, otherwise it gets colored
-            this.hiddenTiles.tint = 0xFFFFFF;
-        }
+        this.hiddenTiles.tint = !this.image ? Color.from(this.color) : 0xFFFFFF;
     }
 
     refreshMask() {

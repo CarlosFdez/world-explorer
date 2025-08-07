@@ -120,15 +120,17 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.hiddenTiles.position.set(x, y);
         this.hiddenTiles.width = width;
         this.hiddenTiles.height = height;
+
         // Create a mask for it, with a texture we can reference later to update the mask
         this.hiddenTilesMaskTexture = createPlainTexture();
         this.hiddenTiles.mask = new PIXI.Sprite(this.hiddenTilesMaskTexture);
         this.hiddenTiles.mask.position.set(x, y);
+
         // Add to the layer
         this.addChild(this.hiddenTiles);
         this.addChild(this.hiddenTiles.mask);
 
-        this.updateSettings();
+        this.#syncSettings();
 
         this.#migratePositions();
     }
@@ -156,7 +158,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const imageChanged = this.image !== flags.image;
         const becameEnabled = !this.enabled && flags.enabled;
 
-        this.updateSettings();
+        this.#syncSettings();
 
         this.refreshMask();
         if (becameEnabled) {
@@ -169,8 +171,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
-    /** Set the settings to `this` on initialize and updates. */
-    updateSettings() {
+    /** Reads flags and updates variables to match */
+    #syncSettings() {
         const flags = this.settings;
         this.hiddenAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
         this.color = flags.color;
@@ -205,7 +207,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     refreshImage(image = null) {
-        if (image) this.image = image;
+        this.image ??= image;
         if (this.enabled && this.image) {
             foundry.canvas.loadTexture(this.image).then((texture) => {
                 this.hiddenTiles.texture = texture;

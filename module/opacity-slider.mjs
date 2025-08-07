@@ -58,8 +58,8 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
 
         element.addEventListener("input", (event) => {
             const value = Number(event.target.value);
-            const updateId = event.target.parentNode.name;
-            this.scene.update({ [updateId]: value });
+            const property = event.target.closest("[name]").name;
+            this.scene.update({ [property]: value });
         });
     }
 

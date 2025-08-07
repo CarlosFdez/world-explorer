@@ -1,10 +1,7 @@
 {
     "WorldExplorer": {
         "Name": "World Explorer",
-        "Settings": {
-        },
         "SceneSettings": {
-            "Description": "Configure settings for the World Explorer module",
             "Enabled": "Enable the module to work for this scene",
             "Color": "Overlay Color",
             "Image": "Overlay Image",
@@ -36,7 +33,7 @@
         },
         "ResetDialog": {
             "Title": "Reset Scene?",
-            "Content": "Are you sure you want to reset and update the entire scene?",
+            "Content": "Are you sure you want to reset and update the entire scene?</br>This can't be undone!",
             "Confirm": "Type this exact code in the box below in order to proceed: <strong>{code}</strong>",
             "Choices": {
                 "Explored": "Show All",

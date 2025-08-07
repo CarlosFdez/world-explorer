@@ -1,4 +1,4 @@
-<div class="tab {{#if tab.active}} active{{/if}}" data-group="sheet" data-tab="worldExplorer">
+<div class="tab scrollable {{#if tab.active}}active{{/if}}" data-group="sheet" data-tab="worldExplorer">
     <div class="form-group">
         <label for="WorldExplorer-Enabled-{{document.id}}">{{localize "WorldExplorer.SceneSettings.Enabled"}}</label>
         <input id="WorldExplorer-Enabled-{{document.id}}" type="checkbox" name="flags.world-explorer.enabled" {{checked enabled}}/>
@@ -7,16 +7,13 @@
     <div class="form-group">
         <label>{{localize "WorldExplorer.SceneSettings.Color"}}</label>
         <div class="form-fields">
-            <input type="text" name="flags.world-explorer.color" value="{{color}}" placeholder="Default (#000000)" data-dtype="String"/>
+            <color-picker name="flags.world-explorer.color" value="{{color}}"  placeholder="Default (#000000)"></color-picker>
         </div>
     </div>
     <div class="form-group">
         <label>{{localize "WorldExplorer.SceneSettings.Image"}}</label>
         <div class="form-fields">
-            <button type="button" class="file-picker" data-type="imagevideo" data-target="flags.world-explorer.image" title="Browse Files" tabindex="-1">
-                <i class="fa-solid fa-file-import fa-fw"></i>
-            </button>
-            <input class="image" type="text" name="flags.world-explorer.image" placeholder="File Path" value="{{image}}">
+            <file-picker name="flags.world-explorer.image" type="imagevideo" value="{{image}}"></file-picker>
         </div>
     </div>
     <div class="form-group">
@@ -37,13 +34,13 @@
         <div class="form-group">
             <label>{{localize "WorldExplorer.SceneSettings.Reveal"}}</label>
             <div class="form-fields">
-                <input type="text" name="flags.world-explorer.revealRadius" value="{{revealRadius}}">
+                <input type="number" name="flags.world-explorer.revealRadius" value="{{revealRadius}}">
             </div>
         </div>
         <div class="form-group">
             <label>{{localize "WorldExplorer.SceneSettings.GridReveal.Name"}}</label>
             <div class="form-fields">
-                <input type="text" name="flags.world-explorer.gridRevealRadius" value="{{gridRevealRadius}}">
+                <input type="number" name="flags.world-explorer.gridRevealRadius" value="{{gridRevealRadius}}">
             </div>
             <p class="hint">{{localize "WorldExplorer.SceneSettings.GridReveal.Hint"}}</p>
         </div>

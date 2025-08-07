@@ -56,10 +56,10 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
             element.style.top = `${bounds.top}px`;
         }
 
-        const slider = element.querySelector("[type=range]");
-        slider?.addEventListener("input", (event) => {
+        element.addEventListener("input", (event) => {
             const value = Number(event.target.value);
-            this.scene.update({ "flags.world-explorer.opacityGM": value });
+            const property = event.target.closest("[name]").name;
+            this.scene.update({ [property]: value });
         });
     }
 

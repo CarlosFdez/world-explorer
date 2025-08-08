@@ -58,6 +58,25 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
+    /** 
+     * The currently set alpha value of the world explorer layer. 
+     * For players this is usually 1, but it may differ for GMs 
+     * @type {number};
+     */
+    overlayAlpha;
+
+    /**
+     * The main overlay for completely hidden tiles.
+     * @type {PIXI.Sprite}
+     */
+    hiddenTiles;
+
+    /**
+     * The texture associated with the hiddenTiles mask
+     * @type {PIXI.RenderTexture}
+     */
+    hiddenTilesMaskTexture;
+
     constructor() {
         super();
         this.color = DEFAULT_SETTINGS.color;
@@ -113,8 +132,9 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return this.enabled && this.state.clearing;
     }
 
-    initialize(options) {
+    initialize() {
         const { x, y, width, height } = canvas.dimensions.sceneRect;
+
         // Sprite to cover the hidden tiles. Fill with white texture, or image texture if one is set
         this.hiddenTiles = new PIXI.Sprite(PIXI.Texture.WHITE);
         this.hiddenTiles.position.set(x, y);
@@ -131,7 +151,6 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.addChild(this.hiddenTiles.mask);
 
         this.#syncSettings();
-
         this.#migratePositions();
     }
 
@@ -174,7 +193,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     /** Reads flags and updates variables to match */
     #syncSettings() {
         const flags = this.settings;
-        this.hiddenAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
+        this.overlayAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
         this.color = flags.color;
         this.image = flags.image;
         this._enabled = flags.enabled;
@@ -236,17 +255,17 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         if (!this.enabled) return;
         const { x, y, width, height } = canvas.dimensions.sceneRect;
 
-        // Create mask for the hiddenTiles / image layer
-        const hiddenMask = new PIXI.Graphics();
-        hiddenMask.position.set(-x, -y);
+        // Create graphic to draw the mask for the hiddenTiles layer
+        const maskGraphic = new PIXI.Graphics();
+        maskGraphic.position.set(-x, -y);
 
         // Cover everything with the mask by painting it white
-        hiddenMask.beginFill(0xFFFFFF, this.hiddenAlpha);
-        hiddenMask.drawRect(x, y, width, height);
-        hiddenMask.endFill();
+        maskGraphic.beginFill(0xFFFFFF, this.overlayAlpha);
+        maskGraphic.drawRect(x, y, width, height);
+        maskGraphic.endFill();
 
         // Now uncover the revealed tiles by painting them black in the mask
-        hiddenMask.beginFill(0x000000);
+        maskGraphic.beginFill(0x000000);
 
         // Do the revealed tiles, uncover them or the reveal radius in the main mask
         const gridRevealRadius = this.getGridRevealRadius();
@@ -254,11 +273,11 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             // Uncover circles if extend grid elements is set
             if (gridRevealRadius > 0) {
                 const { x, y } = canvas.grid.getCenterPoint(position);
-                hiddenMask.drawCircle(x, y, gridRevealRadius);
+                maskGraphic.drawCircle(x, y, gridRevealRadius);
             } else {
                 // Otherwise just uncover the revealed grid
                 const poly = this._getGridPolygon(position);
-                hiddenMask.drawPolygon(poly);
+                maskGraphic.drawPolygon(poly);
             }
         }
 
@@ -269,16 +288,16 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                 const document = token.document;
                 if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
                     const { x, y } = token.center;
-                    hiddenMask.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
+                    maskGraphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
                 }
             }
         }
 
-        hiddenMask.endFill();
+        maskGraphic.endFill();
 
         // Render the mask
-        canvas.app.renderer.render(hiddenMask, { renderTexture: this.hiddenTilesMaskTexture });
-        hiddenMask.destroy();
+        canvas.app.renderer.render(maskGraphic, { renderTexture: this.hiddenTilesMaskTexture });
+        maskGraphic.destroy();
     }
 
     /** Returns the grid reveal distance in canvas coordinates (if configured) */
@@ -356,7 +375,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             }
         };
 
-        canvas.stage.addListener('pointerup', (event) => {
+        canvas.stage.addListener('pointerup', () => {
             draggingOnCanvas = null; // clear dragging status when mouse is lifted
         });
 

@@ -1,29 +1,27 @@
-type EditingMode = "toggle" | "reveal" | "hide";
+import PixiJS from "pixi.js";
 
-interface WorldExplorerFlags {
-    color: string;
-    revealRadius: number;
-    gridRevealRadius: number;
-    opacityGM: number;
-    opacityPlayer: number;
-    persistExploredAreas: boolean;
-    image?: string;
-    enabled?: boolean;
-    revealedPositions?: [number, number][];
-    zIndex: number;
-}
+declare global {
+    type EditingMode = "toggle" | "reveal" | "hide";
 
-interface WorldExplorerState {
-    clearing: boolean;
-    tool: EditingMode;
-}
-
-interface FlagConfig {
-    Scene: {
-        "world-explorer": WorldExplorerFlags;
+    interface WorldExplorerFlags {
+        color: string;
+        revealRadius: number;
+        gridRevealRadius: number;
+        opacityGM: number;
+        opacityPlayer: number;
+        persistExploredAreas: boolean;
+        image?: string;
+        enabled?: boolean;
+        revealedPositions?: [number, number][];
+        zIndex: number;
     }
-}
 
-interface LenientGlobalVariableTypes {
-    game: never; // the type doesn't matter
+    interface WorldExplorerState {
+        clearing: boolean;
+        tool: EditingMode;
+    }
+
+    namespace globalThis {
+        export import PIXI = PixiJS;
+    }
 }

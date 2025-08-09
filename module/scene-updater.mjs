@@ -2,30 +2,31 @@ import { uniq } from "./util.mjs";
 
 const MODULE = "world-explorer";
 
-/** A wrapper around a scene used to handle persistance and sequencing */
+/** A wrapper around a scene used to handle persistence and sequencing */
 export class SceneUpdater {
     constructor(scene) {
         this.scene = scene;
         this.hexUpdates = new Map();
         this.updating = false;
+        this.paddedSceneRect = canvas.dimensions.sceneRect.clone().pad(canvas.grid.size);
     }
 
     reveal(x, y) {
-        const { i, j } = canvas.grid.getOffset({ x, y });
-        const position = [i, j];
-        this.hexUpdates.set(position.toString(), {
-            position,
-            state: true,
-        });
-        this.#performUpdates();
+        this.changeState(x, y, true);
     }
 
     hide(x, y) {
-        const { i, j } = canvas.grid.getOffset({ x, y });
+        this.changeState(x, y, false);
+    }
+
+    changeState(x, y, state = false) {
+        // Ignore if this is outside the map's grid (sceneRect + padding of 1 grid size)
+        if (!this.paddedSceneRect.contains(x, y)) return;
+
         const position = [i, j];
         this.hexUpdates.set(position.toString(), {
             position,
-            state: false,
+            state,
         });
         this.#performUpdates();
     }
@@ -35,18 +36,24 @@ export class SceneUpdater {
 
         const reveal = options?.reveal ?? false;
         if (reveal) {
-            // Add a reveal for every grid position. If this is a hex grid, we also need to mark negative positions by one.
-            const d = canvas.dimensions;
-            const offset = canvas.grid.getOffset({ x: d.width - 1, y: d.height - 1 });
-            const dimensions = [offset.i, offset.j];
+            // Add a reveal for every grid position that is on the map (i.e. not in the padding)
+            const { x, y, width, height } = canvas.dimensions.sceneRect;
+            // First grid square/hex that is on the map (sceneRect)
+            const startOffset = canvas.grid.getOffset({ x: x + 1, y: y + 1 });
+            // Last grid square/hex that is on the map (sceneRect)
+            const endOffset = canvas.grid.getOffset({ x: x + width - 1, y: y + height - 1 });
+            // Compensate for hexes being weird
+            // TODO: improve this by looking at the different hex grid types
             if (canvas.grid.isHexagonal) {
-                dimensions[0] += 1;
-                dimensions[1] += 1;
+                startOffset.i -= 1;
+                startOffset.j -= 1;
+                endOffset.i += 1;
+                endOffset.j += 1;
             }
             const newPositions = [];
-            for (let row = 0; row < dimensions[0]; row++) {
-                for (let col = 0; col < dimensions[1]; col++) {
-                    newPositions.push([row, col]);
+            for (let i = startOffset.i; i <= endOffset.i; i++) {
+                for (let j = startOffset.j; j <= endOffset.j; j++) {
+                    newPositions.push([i, j]);
                 }
             }
             this.scene.setFlag(MODULE, "revealedPositions", newPositions);

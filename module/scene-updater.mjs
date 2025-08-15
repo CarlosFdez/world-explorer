@@ -11,23 +11,24 @@ export class SceneUpdater {
         this.paddedSceneRect = canvas.dimensions.sceneRect.clone().pad(canvas.grid.size);
     }
 
-    reveal(x, y) {
-        this.#changeState(x, y, true);
+    reveal({coords = null, offset = null}) {
+        this.#changeState({coords, offset}, true);
     }
 
-    partial(x, y) {
-        this.#changeState(x, y, "partial");
+    partial({coords = null, offset = null}) {
+        this.#changeState({coords, offset}, "partial");
     }
 
-    hide(x, y) {
-        this.#changeState(x, y, false);
+    hide({coords = null, offset = null}) {
+        this.#changeState({coords, offset}, false);
     }
 
-    #changeState(x, y, reveal = false) {
+    #changeState({coords = null, offset = null}, reveal = false) {
+        if (!coords && !offset) return;
         // Ignore if this is outside the map's grid (sceneRect + padding of 1 grid size)
-        if (!this.paddedSceneRect.contains(x, y)) return;
+        if (coords && !this.paddedSceneRect.contains(coords.x, coords.y)) return;
 
-        const offset = canvas.grid.getOffset({ x, y });
+        offset = offset ?? canvas.grid.getOffset(coords);
         const key = offsetToString(offset);
         this.hexUpdates.set(key, {
             offset,

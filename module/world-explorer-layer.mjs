@@ -443,50 +443,52 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     /**
-     * Returns true if a grid coordinate (x, y) is revealed.
+     * Returns true if a grid coordinate (x, y) or offset (i, j) is revealed.
      * @param {Point} position
      */
-    isRevealed(position) {
-        const offset = canvas.grid.getOffset(position);
+    isRevealed({coords = null, offset = null}) {
+        if (!coords && !offset) return null;
+        offset = offset ?? canvas.grid.getOffset(coords);
         const key = offsetToString(offset);
         return this.revealed.has(key);
     }
 
     /**
-     * Returns true if a grid coordinate (x, y) is partly revealed.
+     * Returns true if a grid coordinate (x, y) or offset (i, j) is partly revealed.
      * @param {Point} position
      */
-    isPartial(position) {
-        const offset = canvas.grid.getOffset(position);
+    isPartial({coords = null, offset = null}) {
+        if (!coords && !offset) return null;
+        offset = offset ?? canvas.grid.getOffset(coords);
         const key = offsetToString(offset);
         return this.partials.has(key);
     }
 
     /** 
-     * Reveals a coordinate and saves it to the scene
+     * Reveals a coordinate or offset and saves it to the scene
      * @param {Point} position
      */
-    reveal(position) {
+    reveal({coords = null, offset = null}) {
         if (!this.enabled) return;
-        this.updater.reveal(position.x, position.y);
+        this.updater.reveal({coords, offset});
     }
 
     /** 
-     * Partly reveals a coordinate and saves it to the scene
+     * Partly reveals a coordinate or offset and saves it to the scene
      * @param {Point} position
      */
-    partial(position) {
+    partial({coords = null, offset = null}) {
         if (!this.enabled) return;
-        this.updater.partial(position.x, position.y);
+        this.updater.partial({coords, offset});
     }
 
     /** 
-     * Unreveals a coordinate and saves it to the scene
+     * Unreveals a coordinate or offset and saves it to the scene
      * @param {Point} position
      */
-    unreveal(position) {
+    unreveal({coords = null, offset = null}) {
         if (!this.enabled) return;
-        this.updater.hide(position.x, position.y);
+        this.updater.hide({coords, offset});
     }
 
     /** Clears the entire scene. If reveal: true is passed, reveals all positions instead */
@@ -551,8 +553,9 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             if (event.data.button !== 0) return;
 
             const coords = event.data.getLocalPosition(canvas.app.stage);
-            const revealed = this.isRevealed(coords);
-            const partial = this.isPartial(coords);
+            const offset = canvas.grid.getOffset(coords);
+            const revealed = this.isRevealed({coords, offset});
+            const partial = this.isPartial({coords, offset});
 
             // In certain modes, we only go one way, check if the operation is valid
             const canReveal = !revealed && ["toggle", "reveal"].includes(this.state.tool);
@@ -560,11 +563,11 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             const canPartial = !partial && this.state.tool === "partial";
 
             if (canHide) {
-                this.unreveal(coords);
+                this.unreveal({coords, offset});
             } else if (canReveal) {
-                this.reveal(coords);
+                this.reveal({coords, offset});
             } else if (canPartial) {
-                this.partial(coords);
+                this.partial({coords, offset});
             } else {
                 return;
             }
@@ -589,19 +592,20 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
             // Get mouse position translated to canvas coords
             const coords = event.data.getLocalPosition(canvas.app.stage);
-            const revealed = this.isRevealed(coords);
-            const partial = this.isPartial(coords);
+            const offset = canvas.grid.getOffset(coords);
+            const revealed = this.isRevealed({coords, offset});
+            const partial = this.isPartial({coords, offset});
             renderHighlight(coords, revealed, partial);
 
             // For brush or eraser modes, allow click drag drawing
             if (event.data.buttons === 1 && this.state.tool !== "toggle") {
                 draggingOnCanvas = true;
                 if ((revealed || partial) && this.state.tool === "hide") {
-                    this.unreveal(coords);
+                    this.unreveal({coords, offset});
                 } else if (!revealed && this.state.tool === "reveal") {
-                    this.reveal(coords);
+                    this.reveal({coords, offset});
                 } else if (!partial && this.state.tool === "partial") {
-                    this.partial(coords);
+                    this.partial({coords, offset});
                 }
             }
         });

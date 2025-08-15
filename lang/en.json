@@ -2,17 +2,29 @@
     "WorldExplorer": {
         "Name": "World Explorer",
         "SceneSettings": {
-            "Enabled": "Enable the module to work for this scene",
-            "Color": "Overlay Color",
-            "Image": "Overlay Image",
-            "Reveal": "Token Reveal (Distance)",
-            "GridReveal": {
-                "Name": "Grid Extended Reveal (Distance)",
-                "Hint": "Extends visibility of revealed grid spaces into adjacent spaces."
+            "Enabled": "Enable for this scene",
+            "Image": {
+                "Name": "Overlay Image"
             },
-            "GM_Opacity": "GM Overlay Opacity",
-            "Player_Opacity": "Player Overlay Opacity",
-            "Persist_Explored_Areas": "Keep areas explored by tokens",
+            "Color": {
+                "Overlay": {
+                    "Name": "Overlay Color",
+                    "Hint": "When using an overlay image, this overlay color is ignored."
+                },
+                "Partial": {
+                    "Name": "Partly Revealed Color",
+                    "Hint": "Leave empty to use the overlay color above, and no color when using an overlay image. If filled, this is used to color partly revealed spaces of an overlay image for the GM only."
+                }
+            },
+            "Opacity": {
+                "Title": "{role} Overlay Opacity",
+                "Hidden": "Hidden Spaces",
+                "Partial": "Partly Revealed Spaces"
+            },
+            "GridReveal": {
+                "Name": "Extended Revealed Spaces",
+                "Hint": "The revealed grid spaces extend a certain amount into hidden and partly revealed spaces. Does not extend the partly revealed spaces."
+            },
             "Position": {
                 "Name": "Overlay Position",
                 "Hint": "Whether it should display below tiles and textures or above.",
@@ -22,21 +34,32 @@
                     "behindTokens": "Cover the map, non-overhead tiles, and drawings",
                     "front": "Cover everything except grid"
                 }
+            },
+            "TokenInteractions" : {
+                "Title": "Token Interactions",
+                "TokenReveal": "Token Reveal Distance",
+                "PersistExplored": "Keep areas explored by tokens"
             }
         },
         "Tools": {
             "Toggle": "Toggle Spaces",
             "Reveal": "Reveal Spaces",
+            "Partial": "Partly Reveal Spaces",
             "Hide": "Hide Spaces",
-            "Opacity": "GM Overlay Opacity",
-            "Reset": "Reset Scene"
+            "Reset": "Reset Scene",
+            "Opacity": {
+                "Title" : "GM Overlay Opacities",
+                "Partial": "GM Partly Revealed Opacity",
+                "Hidden": "GM Hidden Opacity"
+            }
         },
         "ResetDialog": {
             "Title": "Reset Scene?",
             "Content": "Are you sure you want to reset and update the entire scene?</br>This can't be undone!",
-            "Confirm": "Type this exact code in the box below in order to proceed: <strong>{code}</strong>",
+            "Confirm": "Enter this exact code in the box below to proceed: <strong>{code}</strong>",
             "Choices": {
                 "Explored": "Show All",
+                "Partial": "Partial All",
                 "Unexplored": "Hide All"
             }
         },

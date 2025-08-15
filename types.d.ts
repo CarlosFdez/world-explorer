@@ -3,6 +3,11 @@ import PixiJS from "pixi.js";
 declare global {
     type EditingMode = "toggle" | "reveal" | "hide";
 
+    interface GridEntry {
+        offset: { i: number; j: number; };
+        reveal: boolean | "partial";
+    }
+
     interface WorldExplorerFlags {
         color: string;
         revealRadius: number;
@@ -12,8 +17,8 @@ declare global {
         persistExploredAreas: boolean;
         image?: string;
         enabled?: boolean;
-        revealedPositions?: [number, number][];
         zIndex: number;
+        gridData?: Record<string, GridEntry | undefined>;
     }
 
     interface WorldExplorerState {

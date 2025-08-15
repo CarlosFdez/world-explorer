@@ -1,5 +1,5 @@
 import { SceneUpdater } from "./scene-updater.mjs";
-import { createPlainTexture } from "./util.mjs";
+import { createPlainTexture, offsetToString } from "./util.mjs";
 
 const MODULE = "world-explorer";
 
@@ -12,10 +12,13 @@ const MODULE = "world-explorer";
 
 export const DEFAULT_SETTINGS = {
     color: "#000000",
+    partialColor: "",
     revealRadius: 0,
     gridRevealRadius: 0,
     opacityGM: 0.7,
     opacityPlayer: 1,
+    partialOpacityGM: 0.3,
+    partialOpacityPlayer: 0.3,
     persistExploredAreas: false,
     position: "behindDrawings",
 };
@@ -59,8 +62,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     /** 
-     * The currently set alpha value of the world explorer layer. 
-     * For players this is usually 1, but it may differ for GMs 
+     * The currently set alpha value of the world explorer layer main mask
+     * For players this is usually 1, but it may differ for GMs
      * @type {number};
      */
     overlayAlpha;
@@ -77,15 +80,35 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      */
     hiddenTilesMaskTexture;
 
+    /** 
+     * The currently set alpha value of the world explorer layer partial mask
+     * For players this is different than for GMs
+     * @type {number};
+     */
+    partialAlpha;
+
+    /**
+     * The overlay for partly revealed tiles.
+     * @type {PIXI.Sprite}
+     */
+    partialTiles;
+
+    /**
+     * The texture associated with the partialTiles mask
+     * @type {PIXI.RenderTexture}
+     */
+    partialTilesMaskTexture;
+
     constructor() {
         super();
         this.color = DEFAULT_SETTINGS.color;
+        this.partialColor = this.color;
 
         /** @type {Partial<WorldExplorerState>} */
         this.state = {};
     }
 
-    /** Any settings we are currently previewing. Currently unused, will be used once we're more familiar with the scene config preview */ 
+    /** Any settings we are currently previewing. Currently unused, will be used once we're more familiar with the scene config preview */
     previewSettings = {};
 
     /** @returns {WorldExplorerFlags} */
@@ -106,9 +129,37 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return canvas.interface.grid.highlightLayers[this.name] || canvas.interface.grid.addHighlightLayer(this.name);
     }
 
+    /** Store the gridData as a Map and filter out the revealed/partials */
+    setGridDataMap() {
+        const gridData = this.scene.getFlag(MODULE, "gridData") ?? {};
+        const gridDataMap = new Map(Object.entries(gridData));
+        this._gridDataMap = gridDataMap;
+        this._revealed = new Map(
+            [...gridDataMap]
+            .filter(([key, entry]) => entry.reveal === true)
+        );
+        this._partials = new Map(
+            [...gridDataMap]
+            .filter(([key, entry]) => entry.reveal === "partial")
+        );
+    }
+
+    get gridDataMap() {
+        if (!this._gridDataMap) this.setGridDataMap();
+        return this._gridDataMap;
+    }
+
     /** @type {GridOffset[]} */
     get revealed() {
-        return (this.scene.getFlag(MODULE, "revealedPositions") ?? []).map(([i, j]) => ({ i, j }));
+        if (!this._gridDataMap) this.setGridDataMap();
+        return this._revealed;
+    }
+
+
+    /** @type {GridOffset[]} */
+    get partials() {
+        if (!this._gridDataMap) this.setGridDataMap();
+        return this._partials;
     }
 
     get enabled() {
@@ -118,18 +169,23 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     set enabled(value) {
         this._enabled = !!value;
         this.visible = !!value;
-        
+
         if (value) {
             this.refreshOverlay();
             this.refreshMask();
         } else {
-            this.removeChildren()
+            this.removeChildren();
         }
     }
 
     /** Returns true if the user is currently editing, false otherwise. */
     get editing() {
         return this.enabled && this.state.clearing;
+    }
+
+    /** Returns true if there is no image or the GM is viewing and partial color is set */
+    get showPartialTiles() {
+        return !this.image || (this.settings.partialColor && game.user.isGM);
     }
 
     initialize() {
@@ -150,6 +206,19 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.addChild(this.hiddenTiles);
         this.addChild(this.hiddenTiles.mask);
 
+        // Graphic to cover the partially revealed tiles (doesn't need an image texture, so use Graphics)
+        // Needs to be separate, for we want it to have a different color
+        this.partialTiles = new PIXI.Graphics();
+
+        // Create a separate mask for it, as it will also have separate transparency so it can overlay the image texture
+        this.partialTilesMaskTexture = createPlainTexture();
+        this.partialTiles.mask = new PIXI.Sprite(this.partialTilesMaskTexture);
+        this.partialTiles.mask.position.set(x, y);
+
+        // Add to the layer
+        this.addChild(this.partialTiles);
+        this.addChild(this.partialTiles.mask);
+
         this.#syncSettings();
         this.#migratePositions();
     }
@@ -167,7 +236,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return this;
     }
 
-    /** Triggered when the current scene update */
+    /** Triggered when the current scene updates */
     update() {
         if (this.#migratePositions()) {
             return;
@@ -178,8 +247,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const becameEnabled = !this.enabled && flags.enabled;
 
         this.#syncSettings();
-
         this.refreshMask();
+
         if (becameEnabled) {
             this.refreshOverlay();
         } else {
@@ -193,11 +262,23 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     /** Reads flags and updates variables to match */
     #syncSettings() {
         const flags = this.settings;
-        this.overlayAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
-        this.color = flags.color;
-        this.image = flags.image;
         this._enabled = flags.enabled;
         this.visible = this._enabled;
+        this.color = flags.color;
+        this.partialColor = flags.partialColor ? flags.partialColor : this.color; // flags.partialColor === "" if not set
+        this.image = flags.image;
+        this.#syncAlphas();
+        this.setGridDataMap();
+    }
+
+    /** Reads alpha flags and update variables to match
+     * Do this separately, so it can be invoked on a mask-only update
+     * As only the mask uses the alpha
+    */
+    #syncAlphas() {
+        const flags = this.settings;
+        this.overlayAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
+        this.partialAlpha = (game.user.isGM ? flags.partialOpacityGM : flags.partialOpacityPlayer) ?? DEFAULT_SETTINGS.partialOpacityPlayer;
     }
 
     onChangeTool(toolName) {
@@ -239,7 +320,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     refreshOverlay() {
         if (!this.enabled) return;
 
-        // Keep this process for now, needed when adding partial tiles
+        // Hide the partial tiles if an image is present and this is not the GM
+        this.partialTiles.visible = this.showPartialTiles;
+        // Fill the partialTiles, if visible, with something to mask
+        if (this.partialTiles.visible) {
+            const { x, y, width, height } = canvas.dimensions.sceneRect;
+            this.partialTiles.beginFill(0xFFFFFF);
+            this.partialTiles.drawRect(x, y, width, height);
+            this.partialTiles.endFill();
+        }
 
         this.refreshColors();
     }
@@ -247,36 +336,71 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     refreshColors() {
         if (!this.enabled) return;
 
-        // Set the color of the layers, but only if no image is present
+        // Set the color of the overlay, but only if no image is present
         this.hiddenTiles.tint = !this.image ? Color.from(this.color) : 0xFFFFFF;
+        // Set the color of the partial tiles
+        this.partialTiles.tint = Color.from(this.partialColor);
     }
 
     refreshMask() {
         if (!this.enabled) return;
+        this.#syncAlphas();
         const { x, y, width, height } = canvas.dimensions.sceneRect;
 
-        // Create graphic to draw the mask for the hiddenTiles layer
+        /** Create masks for the main (maskGraphic) and partial (partialMask) layers
+         * The maskGraphic must be everything except the revealed and partial tiles
+         * The partialMask must be only the partial tiles
+         * Make an empty object partialMask if we are not going to use it
+         */
         const maskGraphic = new PIXI.Graphics();
         maskGraphic.position.set(-x, -y);
+        const partialMask = this.showPartialTiles ? new PIXI.Graphics() : {};
+        partialMask.position?.set(-x, -y);
 
-        // Cover everything with the mask by painting it white
+        // Cover everything with the main mask by painting it white
         maskGraphic.beginFill(0xFFFFFF, this.overlayAlpha);
         maskGraphic.drawRect(x, y, width, height);
         maskGraphic.endFill();
 
-        // Now uncover the revealed tiles by painting them black in the mask
+        /** Process the partial tiles
+         * Uncover them in the main mask, but cover them in the partial mask
+         *
+         * Unless this is an image, then we need to:
+         * - Cover the tile on the main mask again, but with partial alpha
+         * - Use 0.5 alpha on the partial mask to slightly color the partial
+         *   revealed parts of the image for the GM
+        */
         maskGraphic.beginFill(0x000000);
+        partialMask.beginFill?.(0xFFFFFF, !this.image ? this.partialAlpha : 0.5);
+        // We are not drawing gridRevealRadius for partials, as that will result in overlapping transparant circles, which looks terrible
+        for (const [key, entry] of this.partials) {
+            const poly = this._getGridPolygon(entry.offset);
+            maskGraphic.drawPolygon(poly);
+            partialMask.drawPolygon?.(poly);
+            // If this is an image, we need to set the tile to the partial opacity, thus we have to draw a new white polygon where we just made a black one
+            if (this.image) {
+                maskGraphic.beginFill(0xFFFFFF, this.partialAlpha);
+                maskGraphic.drawPolygon(poly);
+                // Back to a black fill for the next one
+                maskGraphic.beginFill(0x000000);
+            }
+        }
 
-        // Do the revealed tiles, uncover them or the reveal radius in the main mask
+        /** Process the revealed tiles, uncover them in the main mask
+         * Also uncover reveal radius, if enabled, in both.
+         * This needs to happen after the partial tiles
+         */
         const gridRevealRadius = this.getGridRevealRadius();
-        for (const position of this.revealed) {
+        partialMask.beginFill?.(0x000000);
+        for (const [key, entry] of this.revealed) {
             // Uncover circles if extend grid elements is set
             if (gridRevealRadius > 0) {
-                const { x, y } = canvas.grid.getCenterPoint(position);
+                const { x, y } = canvas.grid.getCenterPoint(entry.offset);
                 maskGraphic.drawCircle(x, y, gridRevealRadius);
+                partialMask.drawCircle?.(x, y, gridRevealRadius);
             } else {
                 // Otherwise just uncover the revealed grid
-                const poly = this._getGridPolygon(position);
+                const poly = this._getGridPolygon(entry.offset);
                 maskGraphic.drawPolygon(poly);
             }
         }
@@ -289,15 +413,22 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                 if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
                     const { x, y } = token.center;
                     maskGraphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
+                    partialMask.drawCircle?.(x, y, token.getLightRadius(tokenRevealRadius));
                 }
             }
         }
 
         maskGraphic.endFill();
+        partialMask.endFill?.();
 
-        // Render the mask
+        // Render the masks
         canvas.app.renderer.render(maskGraphic, { renderTexture: this.hiddenTilesMaskTexture });
         maskGraphic.destroy();
+        // Only render the partial mask if applicable
+        if (this.showPartialTiles) {
+            canvas.app.renderer.render(partialMask, { renderTexture: this.partialTilesMaskTexture });
+            partialMask.destroy();
+        }
     }
 
     /** Returns the grid reveal distance in canvas coordinates (if configured) */
@@ -316,7 +447,19 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * @param {Point} position
      */
     isRevealed(position) {
-        return this._getIndex(position.x, position.y) > -1;
+        const offset = canvas.grid.getOffset(position);
+        const key = offsetToString(offset);
+        return this.revealed.has(key);
+    }
+
+    /**
+     * Returns true if a grid coordinate (x, y) is partly revealed.
+     * @param {Point} position
+     */
+    isPartial(position) {
+        const offset = canvas.grid.getOffset(position);
+        const key = offsetToString(offset);
+        return this.partials.has(key);
     }
 
     /** 
@@ -329,7 +472,16 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     /** 
-     * Unreveals a coordinate and saves it to the scene 
+     * Partly reveals a coordinate and saves it to the scene
+     * @param {Point} position
+     */
+    partial(position) {
+        if (!this.enabled) return;
+        this.updater.partial(position.x, position.y);
+    }
+
+    /** 
+     * Unreveals a coordinate and saves it to the scene
      * @param {Point} position
      */
     unreveal(position) {
@@ -362,16 +514,26 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         };
 
         // Renders the highlight to use for the grid's future status
-        const renderHighlight = (position, reveal) => {
+        const renderHighlight = (position, revealed, partial) => {
             const { x, y } = canvas.grid.getTopLeftPoint(position);
             this.highlightLayer.clear();
-            
+
             // In certain modes, we only go one way, check if the operation is valid
-            const canReveal = ["toggle", "reveal"].includes(this.state.tool);
-            const canHide = ["toggle", "hide"].includes(this.state.tool);
-            if ((reveal && canReveal) || (!reveal && canHide)) {
-                const color = reveal ? 0x0022FF : 0xFF0000;
-                canvas.interface.grid.highlightPosition(this.highlightLayer.name, { x, y, color, border: 0xFF0000 });
+            const canReveal = !revealed && ["toggle", "reveal"].includes(this.state.tool);
+            const canHide = (revealed && ["toggle", "hide"].includes(this.state.tool)) || (partial && this.state.tool === "hide");
+            const canPartial = !partial && this.state.tool === "partial";
+
+            if (canReveal || canHide || canPartial) {
+                // blue color for revealing tiles
+                let color = 0x0022FF;
+                if (canPartial) {
+                    // default to purple for making tiles partly revealed if no partial
+                    // color is defined, otherwise it would look identical to the hide tool
+                    color = this.settings.partialColor ? Color.from(this.partialColor) : 0x7700FF;
+                } else if (canHide) {
+                    color = Color.from(this.color);
+                }
+                canvas.interface.grid.highlightPosition(this.highlightLayer.name, { x, y, color, border: color });
             }
         };
 
@@ -384,28 +546,34 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                 draggingOnCanvas = false;
                 return;
             }
-
             draggingOnCanvas = true;
-            const canReveal = ["toggle", "reveal"].includes(this.state.tool);
-            const canHide = ["toggle", "hide"].includes(this.state.tool);
-            
-            if (event.data.button === 0) {
-                const coords = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(coords);
-                if (revealed && canHide) {
-                    this.unreveal(coords);
-                } else if (!revealed && canReveal) {
-                    this.reveal(coords)
-                } else {
-                    return;
-                }
 
-                renderHighlight(coords, revealed);
+            if (event.data.button !== 0) return;
+
+            const coords = event.data.getLocalPosition(canvas.app.stage);
+            const revealed = this.isRevealed(coords);
+            const partial = this.isPartial(coords);
+
+            // In certain modes, we only go one way, check if the operation is valid
+            const canReveal = !revealed && ["toggle", "reveal"].includes(this.state.tool);
+            const canHide = (revealed && ["toggle", "hide"].includes(this.state.tool)) || (partial && this.state.tool === "hide");
+            const canPartial = !partial && this.state.tool === "partial";
+
+            if (canHide) {
+                this.unreveal(coords);
+            } else if (canReveal) {
+                this.reveal(coords);
+            } else if (canPartial) {
+                this.partial(coords);
+            } else {
+                return;
             }
+
+            renderHighlight(coords, revealed, partial);
         });
 
         canvas.stage.addListener('pointermove', (event) => {
-            // If no button is held down, clear the dragging status 
+            // If no button is held down, clear the dragging status
             if (event.data.buttons !== 1) {
                 draggingOnCanvas = null;
             }
@@ -421,18 +589,19 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
             // Get mouse position translated to canvas coords
             const coords = event.data.getLocalPosition(canvas.app.stage);
-            const revealed = this.isRevealed(coords)
-            renderHighlight(coords, !revealed);
+            const revealed = this.isRevealed(coords);
+            const partial = this.isPartial(coords);
+            renderHighlight(coords, revealed, partial);
 
             // For brush or eraser modes, allow click drag drawing
             if (event.data.buttons === 1 && this.state.tool !== "toggle") {
                 draggingOnCanvas = true;
-                const coords = event.data.getLocalPosition(canvas.app.stage);
-                const revealed = this.isRevealed(coords);
-                if (revealed && this.state.tool == "hide") {
+                if ((revealed || partial) && this.state.tool === "hide") {
                     this.unreveal(coords);
                 } else if (!revealed && this.state.tool === "reveal") {
                     this.reveal(coords);
+                } else if (!partial && this.state.tool === "partial") {
+                    this.partial(coords);
                 }
             }
         });
@@ -447,22 +616,41 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return new PIXI.Polygon(canvas.grid.getVertices(offset));
     }
 
-    /** @param {PointArray} point */
-    _getIndex(...point) {
-        const { i, j } = canvas.grid.getOffset({ x: point[0], y: point[1] });
-        return this.revealed.findIndex((r) => r.i === i && r.j === j);
-    }
-
-    /** Attempt to migrate from older positions (absolute coords) to newer positions (row/col). */
+    /** Migrate from older flags to newer flag data */
     #migratePositions() {
         const flags = this.settings;
-        if ("revealed" in flags) {
-            const newRevealed = flags.revealed.map((position) => canvas.grid.getGridPositionFromPixels(...position));
-            canvas.scene.flags["world-explorer"].revealed = null;
-            this.scene.update({
-                "flags.world-explorer.revealedPositions": newRevealed,
-                "flags.world-explorer.-=revealed": null,
+        const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
+        const hasOldFlag = oldFlags.find((flag) => { if (flag in flags) return flag; });
+        if (hasOldFlag) {
+            let newFlagData = flags[hasOldFlag].reduce((newFlag, position) => {
+                let i, j, reveal;
+                switch (hasOldFlag) {
+                    case "revealed":
+                        [i, j] = canvas.grid.getGridPositionFromPixels(...position);
+                        reveal = true;
+                        break;
+                    case "revealedPositions":
+                        [i, j] = position;
+                        reveal = true;
+                        break;
+                    case "gridPositions":
+                        [i, j, reveal] = position;
+                        reveal = reveal === "reveal" ? true : "partial";
+                        break;
+                }
+                const offset = { i, j };
+                const key = offsetToString(offset);
+                newFlag[key] = { offset, reveal };
+                return newFlag;
+            }, {});
+            const updateFlags = {
+                "flags.world-explorer.gridData": newFlagData,
+            };
+            oldFlags.forEach((flag) => {
+                canvas.scene.flags["world-explorer"][flag] = null;
+                updateFlags[`flags.world-explorer.-=${flag}`] = null;
             });
+            this.scene.update(updateFlags);
             ui.notifications.info(game.i18n.localize("WorldExplorer.Notifications.Migrated"));
             return true;
         }

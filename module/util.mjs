@@ -72,8 +72,10 @@ export function uniqBy(arr, fn) {
     }, []);
 }
 
-export function uniq(arr) {
-    return uniqBy(arr, String);
+// Get a unique identifier string from the offset object
+export function offsetToString(entry) {
+    const offset = entry.offset ?? entry;
+    return `${offset.i}_${offset.j}`;
 }
 
 /**

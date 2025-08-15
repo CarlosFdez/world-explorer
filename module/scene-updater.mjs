@@ -1,4 +1,4 @@
-import { uniq } from "./util.mjs";
+import { uniqBy, offsetToString } from "./util.mjs";
 
 const MODULE = "world-explorer";
 
@@ -12,21 +12,26 @@ export class SceneUpdater {
     }
 
     reveal(x, y) {
-        this.changeState(x, y, true);
+        this.#changeState(x, y, true);
+    }
+
+    partial(x, y) {
+        this.#changeState(x, y, "partial");
     }
 
     hide(x, y) {
-        this.changeState(x, y, false);
+        this.#changeState(x, y, false);
     }
 
-    changeState(x, y, state = false) {
+    #changeState(x, y, reveal = false) {
         // Ignore if this is outside the map's grid (sceneRect + padding of 1 grid size)
         if (!this.paddedSceneRect.contains(x, y)) return;
 
-        const position = [i, j];
-        this.hexUpdates.set(position.toString(), {
-            position,
-            state,
+        const offset = canvas.grid.getOffset({ x, y });
+        const key = offsetToString(offset);
+        this.hexUpdates.set(key, {
+            offset,
+            reveal,
         });
         this.#performUpdates();
     }
@@ -34,9 +39,11 @@ export class SceneUpdater {
     clear(options) {
         this.hexUpdates.clear();
 
-        const reveal = options?.reveal ?? false;
-        if (reveal) {
+        const revealAll = options?.reveal ?? false;
+        const partialAll = options?.partial ?? false;
+        if (revealAll || partialAll) {
             // Add a reveal for every grid position that is on the map (i.e. not in the padding)
+            const reveal = revealAll ? true : 'partial';
             const { x, y, width, height } = canvas.dimensions.sceneRect;
             // First grid square/hex that is on the map (sceneRect)
             const startOffset = canvas.grid.getOffset({ x: x + 1, y: y + 1 });
@@ -50,37 +57,42 @@ export class SceneUpdater {
                 endOffset.i += 1;
                 endOffset.j += 1;
             }
-            const newPositions = [];
+            const newPositions = {};
             for (let i = startOffset.i; i <= endOffset.i; i++) {
                 for (let j = startOffset.j; j <= endOffset.j; j++) {
-                    newPositions.push([i, j]);
+                    newPositions[`${i}_${j}`] = {
+                        offset: {i, j},
+                        reveal
+                    };
                 }
             }
-            this.scene.setFlag(MODULE, "revealedPositions", newPositions);
+            this.scene.setFlag(MODULE, "gridData", newPositions);
         } else {
-            this.scene.setFlag(MODULE, "revealedPositions", []);
+            this.scene.unsetFlag(MODULE, "gridData");
         }
     }
 
     #performUpdates = foundry.utils.throttle(async () => {
         if (this.updating) return;
 
-        const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
-        const allUpdates = [...this.hexUpdates.values()];
-        const adding = allUpdates.filter((s) => s.state).map((u) => u.position);
-        const removing = new Set(allUpdates.filter((s) => !s.state).map((u) => String(u.position)));
-        const newPositions = uniq([...existing, ...adding]).filter((p) => !removing.has(String(p)));
+        const updates = {};
+        const flagBase = `flags.${MODULE}.gridData`;
+        this.hexUpdates.forEach((value, key) => {
+            if (value.reveal === false) {
+                updates[`${flagBase}.-=${key}`] = null;
+            } else {
+                updates[`${flagBase}.${key}`] = value;
+            }
+        });
 
         this.hexUpdates.clear();
-        if (String(newPositions) !== String(existing)) {
-            this.updating = true;
-            try {
-                await this.scene.setFlag(MODULE, "revealedPositions", newPositions);
-            } finally {
-                this.updating = false;
-                if (this.hexUpdates.size) {
-                    this.#performUpdates();
-                }
+        this.updating = true;
+        try {
+            await this.scene.update(updates);
+        } finally {
+            this.updating = false;
+            if (this.hexUpdates.size) {
+                this.#performUpdates();
             }
         }
     }, 50);

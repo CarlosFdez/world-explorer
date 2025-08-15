@@ -32,11 +32,16 @@ Hooks.on("init", async () => {
     SceneConfig.prototype._preparePartContext = async function(partId, context, options) {
         if (partId === "worldExplorer") {
             return {
-                ...DEFAULT_SETTINGS, 
+                ...DEFAULT_SETTINGS,
                 ...this.document.flags["world-explorer"],
+                units: this.document.grid.units,
                 POSITION_OPTIONS,
                 document: this.document,
                 tab: context.tabs[partId],
+                roles: {
+                    gm: game.i18n.localize("USER.RoleGamemaster"),
+                    player: game.i18n.localize("USER.RolePlayer"),
+                },
             };
         }
 
@@ -79,12 +84,16 @@ Hooks.on("deleteToken", () => {
 Hooks.on("updateScene", (scene, data) => {
     // Skip if the updated scene isn't the current one
     if (scene.id !== canvas.scene.id) return;
-    
+
     if (data.flags && "world-explorer" in data.flags) {
         const worldExplorerFlags = data.flags["world-explorer"];
 
-        // If the only change was revealed positions, do the throttled refresh to not interfere with token moving
-        if (worldExplorerFlags.revealedPositions && Object.keys(worldExplorerFlags).length === 1) {
+        // If the change only affects the mask, do the throttled refresh to not interfere with token moving
+        const maskOnlyFlags = ["gridData", "opacityGM", "opacityPlayer", "partialOpacityGM", "partialOpacityPlayer"];
+        const hasMaskOnlyFlag = maskOnlyFlags.find((flag) => { if (flag in worldExplorerFlags) return flag; });
+        if (hasMaskOnlyFlag && Object.keys(worldExplorerFlags).length === 1) {
+            // Force recreating the gridDataMap if that data changed but we are only refreshing the masks
+            if (hasMaskOnlyFlag === "gridData") canvas.worldExplorer._gridDataMap = null;
             refreshThrottled(true);
         } else {
             canvas.worldExplorer?.update();
@@ -131,17 +140,22 @@ Hooks.on("getSceneControlButtons", (controls) => {
             reveal: {
                 name: "reveal",
                 title: "WorldExplorer.Tools.Reveal",
-                icon: "fa-solid fa-paint-brush"
+                icon: "fa-thin fa-grid-2-plus"
+            },
+            partial: {
+                name: "partial",
+                title: "WorldExplorer.Tools.Partial",
+                icon: "fa-duotone fa-grid-2-plus"
             },
             hide: {
                 name: "hide",
                 title: "WorldExplorer.Tools.Hide",
-                icon: "fa-solid fa-eraser"
+                icon: "fa-solid fa-grid-2-plus"
             },
             opacity: {
                 name: "opacity",
-                title: "WorldExplorer.Tools.Opacity",
-                icon: "fa-solid fa-adjust",
+                title: "WorldExplorer.Tools.Opacity.Title",
+                icon: "fa-duotone fa-eye-low-vision",
                 toggle: true,
                 onChange: () => {
                     const adjuster = OpacityGMAdjuster.instance;
@@ -164,6 +178,9 @@ Hooks.on("getSceneControlButtons", (controls) => {
                         window: {
                             title: "WorldExplorer.ResetDialog.Title"
                         },
+                        position: {
+                            width: 500,
+                        },
                         content,
                         modal: true,
                         buttons: [
@@ -172,6 +189,12 @@ Hooks.on("getSceneControlButtons", (controls) => {
                                 icon: "fa-solid fa-user-secret",
                                 label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Unexplored"),
                                 callback: () => canvas.worldExplorer.clear(),
+                            },
+                            {
+                                action: "partial",
+                                icon: "fa-duotone fa-cloud",
+                                label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Partial"),
+                                callback: () => canvas.worldExplorer.clear({ partial: true }),
                             },
                             {
                                 action: "explored",
@@ -240,7 +263,7 @@ function updateForToken(token, data={}) {
             y: (data.y ?? token.y) + ((token.parent?.dimensions?.size / 2) ?? 0),
         };
         canvas.worldExplorer.reveal(center);
-    } 
+    }
 }
 
 const refreshThrottled = foundry.utils.throttle((force) => {

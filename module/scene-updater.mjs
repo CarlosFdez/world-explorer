@@ -11,16 +11,16 @@ export class SceneUpdater {
         this.paddedSceneRect = canvas.dimensions.sceneRect.clone().pad(canvas.grid.size);
     }
 
-    reveal({coords = null, offset = null}) {
-        this.#changeState({coords, offset}, true);
+    reveal(position) {
+        this.#changeState(position, true);
     }
 
-    partial({coords = null, offset = null}) {
-        this.#changeState({coords, offset}, "partial");
+    partial(position) {
+        this.#changeState(position, "partial");
     }
 
-    hide({coords = null, offset = null}) {
-        this.#changeState({coords, offset}, false);
+    hide(position) {
+        this.#changeState(position, false);
     }
 
     #changeState({coords = null, offset = null}, reveal = false) {
@@ -28,12 +28,9 @@ export class SceneUpdater {
         // Ignore if this is outside the map's grid (sceneRect + padding of 1 grid size)
         if (coords && !this.paddedSceneRect.contains(coords.x, coords.y)) return;
 
-        offset = offset ?? canvas.grid.getOffset(coords);
+        offset ??= canvas.grid.getOffset(coords);
         const key = offsetToString(offset);
-        this.hexUpdates.set(key, {
-            offset,
-            reveal,
-        });
+        this.hexUpdates.set(key, { offset, reveal });
         this.#performUpdates();
     }
 
@@ -61,10 +58,9 @@ export class SceneUpdater {
             const newPositions = {};
             for (let i = startOffset.i; i <= endOffset.i; i++) {
                 for (let j = startOffset.j; j <= endOffset.j; j++) {
-                    newPositions[`${i}_${j}`] = {
-                        offset: {i, j},
-                        reveal
-                    };
+                    const offset = { i, j };
+                    const key = offsetToString(offset);
+                    newPositions[key] = { offset, reveal };
                 }
             }
             this.scene.setFlag(MODULE, "gridData", newPositions);

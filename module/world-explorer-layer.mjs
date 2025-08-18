@@ -469,7 +469,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * @param {Point} position
      */
     reveal({coords = null, offset = null}) {
-        if (!this.enabled) return;
+        if (!this.enabled || (!coords && !offset)) return;
         this.updater.reveal({coords, offset});
     }
 
@@ -478,7 +478,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * @param {Point} position
      */
     partial({coords = null, offset = null}) {
-        if (!this.enabled) return;
+        if (!this.enabled || (!coords && !offset)) return;
         this.updater.partial({coords, offset});
     }
 
@@ -487,7 +487,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * @param {Point} position
      */
     unreveal({coords = null, offset = null}) {
-        if (!this.enabled) return;
+        if (!this.enabled || (!coords && !offset)) return;
         this.updater.hide({coords, offset});
     }
 

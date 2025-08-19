@@ -37,11 +37,9 @@ export class SceneUpdater {
     clear(options) {
         this.hexUpdates.clear();
 
-        const revealAll = options?.reveal ?? false;
-        const partialAll = options?.partial ?? false;
-        if (revealAll || partialAll) {
+        const reveal = options?.reveal ?? false;
+        if (reveal) {
             // Add a reveal for every grid position that is on the map (i.e. not in the padding)
-            const reveal = revealAll ? true : 'partial';
             const { x, y, width, height } = canvas.dimensions.sceneRect;
             // First grid square/hex that is on the map (sceneRect)
             const startOffset = canvas.grid.getOffset({ x: x + 1, y: y + 1 });

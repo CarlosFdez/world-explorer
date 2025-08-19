@@ -622,10 +622,18 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     /** Migrate from older flags to newer flag data */
     #migratePositions() {
+        // Get the flags and see if any of the old flags are present
         const flags = this.settings;
         const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
         const hasOldFlag = oldFlags.find((flag) => { if (flag in flags) return flag; });
         if (hasOldFlag) {
+            // Get info about grid position that are in the padding, so they aren't migrated
+            const { x, y, width, height } = canvas.dimensions.sceneRect;
+            // First grid square/hex that is on the map (sceneRect)
+            const startOffset = canvas.grid.getOffset({ x: x + 1, y: y + 1 });
+            // Last grid square/hex that is on the map (sceneRect)
+            const endOffset = canvas.grid.getOffset({ x: x + width - 1, y: y + height - 1 });
+
             let newFlagData = flags[hasOldFlag].reduce((newFlag, position) => {
                 let i, j, reveal;
                 switch (hasOldFlag) {
@@ -642,16 +650,18 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                         reveal = reveal === "reveal" ? true : "partial";
                         break;
                 }
-                const offset = { i, j };
-                const key = offsetToString(offset);
-                newFlag[key] = { offset, reveal };
+                // Only add it if this offset is on the map and not in the padding
+                if (i >= startOffset.i && j >= startOffset.j && i <= endOffset.i && j <= endOffset.j) {
+                    const offset = { i, j };
+                    const key = offsetToString(offset);
+                    newFlag[key] = { offset, reveal };
+                }
                 return newFlag;
             }, {});
             const updateFlags = {
                 "flags.world-explorer.gridData": newFlagData,
             };
             oldFlags.forEach((flag) => {
-                canvas.scene.flags["world-explorer"][flag] = null;
                 updateFlags[`flags.world-explorer.-=${flag}`] = null;
             });
             this.scene.update(updateFlags);

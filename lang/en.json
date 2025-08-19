@@ -59,7 +59,6 @@
             "Confirm": "Enter this exact code in the box below to proceed: <strong>{code}</strong>",
             "Choices": {
                 "Explored": "Show All",
-                "Partial": "Partial All",
                 "Unexplored": "Hide All"
             }
         },

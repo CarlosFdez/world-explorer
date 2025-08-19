@@ -178,9 +178,6 @@ Hooks.on("getSceneControlButtons", (controls) => {
                         window: {
                             title: "WorldExplorer.ResetDialog.Title"
                         },
-                        position: {
-                            width: 500,
-                        },
                         content,
                         modal: true,
                         buttons: [
@@ -189,12 +186,6 @@ Hooks.on("getSceneControlButtons", (controls) => {
                                 icon: "fa-solid fa-user-secret",
                                 label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Unexplored"),
                                 callback: () => canvas.worldExplorer.clear(),
-                            },
-                            {
-                                action: "partial",
-                                icon: "fa-duotone fa-cloud",
-                                label: game.i18n.localize("WorldExplorer.ResetDialog.Choices.Partial"),
-                                callback: () => canvas.worldExplorer.clear({ partial: true }),
                             },
                             {
                                 action: "explored",

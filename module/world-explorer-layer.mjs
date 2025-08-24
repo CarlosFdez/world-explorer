@@ -17,7 +17,6 @@ export const DEFAULT_SETTINGS = {
     gridRevealRadius: 0,
     opacityGM: 0.7,
     opacityPlayer: 1,
-    partialOpacityGM: 0.3,
     partialOpacityPlayer: 0.3,
     persistExploredAreas: false,
     position: "behindDrawings",
@@ -278,7 +277,16 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     #syncAlphas() {
         const flags = this.settings;
         this.overlayAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
-        this.partialAlpha = (game.user.isGM ? flags.partialOpacityGM : flags.partialOpacityPlayer) ?? DEFAULT_SETTINGS.partialOpacityPlayer;
+        this.partialAlpha = flags.partialOpacityPlayer ?? DEFAULT_SETTINGS.partialOpacityPlayer;
+
+        // If the user is a GM, compute the percentage of partial vs non-partial, and reapply to the GM selected value.
+        // Afterwards, average it with the previous value, weighing closer to the previous the lower the alpha (so that we don't lose too much visibility)
+        if (game.user.isGM && flags.opacityPlayer) {
+            const opacityPlayer = flags.opacityPlayer ?? DEFAULT_SETTINGS.opacityPlayer;
+            const partialRatio = this.partialAlpha / opacityPlayer;
+            const newAlpha = partialRatio * this.overlayAlpha;
+            this.partialAlpha = Math.min(this.overlayAlpha, this.partialAlpha * (1 - partialRatio) + newAlpha * partialRatio);
+        }
     }
 
     onChangeTool(toolName) {

@@ -17,7 +17,7 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
         },
         position: {
             width: 400,
-            height: 80,
+            height: 38,
         }
     }
 
@@ -34,7 +34,6 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
         const flags = this.scene.flags["world-explorer"] ?? {};
         return {
             opacityGM: flags.opacityGM ?? DEFAULT_SETTINGS.opacityGM,
-            partialOpacityGM: flags.partialOpacityGM ?? DEFAULT_SETTINGS.partialOpacityGM,
         };
     }
 

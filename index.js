@@ -89,7 +89,7 @@ Hooks.on("updateScene", (scene, data) => {
         const worldExplorerFlags = data.flags["world-explorer"];
 
         // If the change only affects the mask, do the throttled refresh to not interfere with token moving
-        const maskOnlyFlags = ["gridData", "opacityGM", "opacityPlayer", "partialOpacityGM", "partialOpacityPlayer"];
+        const maskOnlyFlags = ["gridData", "opacityGM", "opacityPlayer", "partialOpacityPlayer"];
         const hasMaskOnlyFlag = maskOnlyFlags.find((flag) => { if (flag in worldExplorerFlags) return flag; });
         if (hasMaskOnlyFlag && Object.keys(worldExplorerFlags).length === 1) {
             // Force recreating the gridDataMap if that data changed but we are only refreshing the masks

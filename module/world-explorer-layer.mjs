@@ -1,5 +1,6 @@
 import { SceneUpdater } from "./scene-updater.mjs";
 import { createPlainTexture, offsetToString } from "./util.mjs";
+import { WorldData } from "./world-data.mjs";
 
 const MODULE = "world-explorer";
 
@@ -129,36 +130,17 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     /** Store the gridData as a Map and filter out the revealed/partials */
-    setGridDataMap() {
-        const gridData = this.scene.getFlag(MODULE, "gridData") ?? {};
-        const gridDataMap = new Map(Object.entries(gridData));
-        this._gridDataMap = gridDataMap;
-        this._revealed = new Map(
-            [...gridDataMap]
-            .filter(([key, entry]) => entry.reveal === true)
-        );
-        this._partials = new Map(
-            [...gridDataMap]
-            .filter(([key, entry]) => entry.reveal === "partial")
-        );
+    setGridDataMap(force) {
+        if (!this._gridDataMap || force) {
+            const gridData = this.scene.getFlag(MODULE, "gridData") ?? {};
+            this._gridDataMap = new WorldData(gridData);
+        }
     }
 
+    /** @type {WorldData} */
     get gridDataMap() {
-        if (!this._gridDataMap) this.setGridDataMap();
+        this.setGridDataMap();
         return this._gridDataMap;
-    }
-
-    /** @type {GridOffset[]} */
-    get revealed() {
-        if (!this._gridDataMap) this.setGridDataMap();
-        return this._revealed;
-    }
-
-
-    /** @type {GridOffset[]} */
-    get partials() {
-        if (!this._gridDataMap) this.setGridDataMap();
-        return this._partials;
     }
 
     get enabled() {
@@ -264,16 +246,17 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this._enabled = flags.enabled;
         this.visible = this._enabled;
         this.color = flags.color;
-        this.partialColor = flags.partialColor ? flags.partialColor : this.color; // flags.partialColor === "" if not set
+        this.partialColor = flags.partialColor || this.color;
         this.image = flags.image;
         this.#syncAlphas();
-        this.setGridDataMap();
+        this.setGridDataMap(true);
     }
 
-    /** Reads alpha flags and update variables to match
+    /** 
+     * Reads alpha flags and update variables to match.
      * Do this separately, so it can be invoked on a mask-only update
      * As only the mask uses the alpha
-    */
+     */
     #syncAlphas() {
         const flags = this.settings;
         this.overlayAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
@@ -381,7 +364,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         maskGraphic.beginFill(0x000000);
         partialMask.beginFill?.(0xFFFFFF, !this.image ? this.partialAlpha : 0.5);
         // We are not drawing gridRevealRadius for partials, as that will result in overlapping transparant circles, which looks terrible
-        for (const [key, entry] of this.partials) {
+        for (const entry of this.gridDataMap.partials) {
             const poly = this._getGridPolygon(entry.offset);
             maskGraphic.drawPolygon(poly);
             partialMask.drawPolygon?.(poly);
@@ -400,7 +383,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
          */
         const gridRevealRadius = this.getGridRevealRadius();
         partialMask.beginFill?.(0x000000);
-        for (const [key, entry] of this.revealed) {
+        for (const entry of this.gridDataMap.revealed) {
             // Uncover circles if extend grid elements is set
             if (gridRevealRadius > 0) {
                 const { x, y } = canvas.grid.getCenterPoint(entry.offset);
@@ -456,9 +439,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      */
     isRevealed({coords = null, offset = null}) {
         if (!coords && !offset) return null;
-        offset = offset ?? canvas.grid.getOffset(coords);
-        const key = offsetToString(offset);
-        return this.revealed.has(key);
+        return this.gridDataMap.get({ coords, offset })?.reveal === true;
     }
 
     /**
@@ -467,9 +448,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      */
     isPartial({coords = null, offset = null}) {
         if (!coords && !offset) return null;
-        offset = offset ?? canvas.grid.getOffset(coords);
-        const key = offsetToString(offset);
-        return this.partials.has(key);
+        return this.gridDataMap.get({ coords, offset })?.reveal === "partial";
     }
 
     /** 

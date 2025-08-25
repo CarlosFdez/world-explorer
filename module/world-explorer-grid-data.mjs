@@ -1,7 +1,7 @@
 import { offsetToString } from "./util.mjs";
 
 /** Contains the grid data for the world */
-export class WorldData {
+export class WorldExplorerGridData {
     /** @type {GridEntry[]} */
     revealed;
 
@@ -21,7 +21,8 @@ export class WorldData {
 
     /** @returns {GridEntry | null} */
     get({ coords = null, offset = null }) {
-        offset = offset ?? canvas.grid.getOffset(coords);
+        if (!coords && !offset) return null;
+        offset ??= canvas.grid.getOffset(coords);
         const key = offsetToString(offset);
         return this.data[key] ?? null;
     }

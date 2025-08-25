@@ -59,19 +59,6 @@ export function translatePolygon(polygon, translate) {
     return polygon;
 }
 
-export function uniqBy(arr, fn) {
-    const seen = new Set();
-    return arr.reduce((result, entry) => {
-        const key = fn(entry);
-        if (!seen.has(key)) {
-            seen.add(key);
-            result.push(entry);
-        }
-
-        return result;
-    }, []);
-}
-
 // Get a unique identifier string from the offset object
 export function offsetToString(entry) {
     const offset = entry.offset ?? entry;
@@ -86,4 +73,16 @@ export function createPlainTexture() {
     const area = width * height;
     const resolution = area > 16000 ** 2 ? 0.25 : area > 8000 ** 2 ? 0.5 : 1.0;
     return PIXI.RenderTexture.create({ width, height, resolution });
+}
+
+/**
+ * Calculate the partial opacity for GMs based on the player, GM, and partial opacities.
+ * Compute the percentage of partial vs. non-partial, and reapply to the GM selected value.
+ * Afterwards, average it with the previous value, weighing closer to the previous the lower the alpha (so that we don't lose too much visibility).
+ * Round to 2 decimals, as that is accurate enough and won't look weird in the scene settings.
+ */
+export function calculateGmPartialOpacity({opacityPlayer, opacityGM, opacityPartial}) {
+    const partialRatio = opacityPartial / opacityPlayer;
+    const newAlpha = partialRatio * opacityGM;
+    return Math.min(opacityGM, opacityPartial * (1 - partialRatio) + newAlpha * partialRatio).toFixed(2);
 }

@@ -3,27 +3,43 @@
         "Name": "World Explorer",
         "SceneSettings": {
             "Enabled": "Enable for this scene",
-            "Image": {
-                "Name": "Overlay Image"
-            },
-            "Color": {
-                "Overlay": {
-                    "Name": "Overlay Color",
-                    "Hint": "When using an overlay image, this overlay color is ignored."
+            "Overlay": {
+                "Title": "Overlay Settings",
+                "Image": {
+                    "Name": "Overlay Image"
                 },
-                "Partial": {
-                    "Name": "Partly Revealed Color",
-                    "Hint": "Leave empty to use the overlay color above, and no color when using an overlay image. If filled, this is used to color partly revealed spaces of an overlay image for the GM only."
+                "Color": {
+                    "Name": "Overlay Color",
+                    "Hint": "Ignored if using an overlay image.",
+                    "Placeholder": "Default (#000000)"
+                },
+                "Opacity": {
+                    "Name": "{role} Opacity"
                 }
             },
-            "Opacity": {
-                "Title": "{role} Overlay Opacity",
-                "Hidden": "Hidden Spaces",
-                "Partial": "Partly Revealed Spaces"
+            "Partial": {
+                "Title": "Partially Revealed Spaces Settings",
+                "Color": {
+                    "Name": "Partials Color",
+                    "Hint": "If empty, the overlay color will be used.{break}If using an overlay image while this is set, the partials will be colored for the GM, but not for the players.",
+                    "Placeholder": "Default (same as Overlay Color above)"
+                },
+                "Opacity": {
+                    "Name": "Partials Opacity",
+                    "Hint": "GM's will see a weighed opacity for the partially revealed spaces, calculated from the other opacities. This calculated value is shown on the right.",
+                    "DerivedName": "GM"
+                }
             },
+            "TokenInteractions" : {
+                "Title": "Token Interactions",
+                "TokenReveal": "Token Reveal Distance",
+                "PersistExplored": "Keep areas explored by tokens"
+            }
+        },
+        "WorldSettings": {
             "GridReveal": {
-                "Name": "Extended Revealed Spaces",
-                "Hint": "The revealed grid spaces extend a certain amount into hidden and partly revealed spaces. Does not extend the partly revealed spaces."
+                "Name": "Extended Revealed Spaces (units)",
+                "Hint": "The revealed grid spaces extend a certain amount into hidden and partially revealed spaces. Does not extend the partially revealed spaces. The units used is what's given in the scene settings."
             },
             "Position": {
                 "Name": "Overlay Position",
@@ -34,24 +50,15 @@
                     "behindTokens": "Cover the map, non-overhead tiles, and drawings",
                     "front": "Cover everything except grid"
                 }
-            },
-            "TokenInteractions" : {
-                "Title": "Token Interactions",
-                "TokenReveal": "Token Reveal Distance",
-                "PersistExplored": "Keep areas explored by tokens"
             }
         },
         "Tools": {
             "Toggle": "Toggle Spaces",
             "Reveal": "Reveal Spaces",
-            "Partial": "Partly Reveal Spaces",
+            "Partial": "Partially Reveal Spaces",
             "Hide": "Hide Spaces",
             "Reset": "Reset Scene",
-            "Opacity": {
-                "Title" : "GM Overlay Opacities",
-                "Partial": "GM Partly Revealed Opacity",
-                "Hidden": "GM Hidden Opacity"
-            }
+            "Opacity": "GM Overlay Opacity"
         },
         "ResetDialog": {
             "Title": "Reset Scene?",

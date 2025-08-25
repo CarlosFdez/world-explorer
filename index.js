@@ -1,12 +1,46 @@
 import { OpacityGMAdjuster } from "./module/opacity-slider.mjs";
 import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./module/world-explorer-layer.mjs";
+import { calculateGmPartialOpacity } from "./module/util.mjs";
 
 const POSITION_OPTIONS = {
-    back: "WorldExplorer.SceneSettings.Position.Choices.back",
-    behindDrawings: "WorldExplorer.SceneSettings.Position.Choices.behindDrawings",
-    behindTokens: "WorldExplorer.SceneSettings.Position.Choices.behindTokens",
-    front: "WorldExplorer.SceneSettings.Position.Choices.front",
+    back: "WorldExplorer.WorldSettings.Position.Choices.back",
+    behindDrawings: "WorldExplorer.WorldSettings.Position.Choices.behindDrawings",
+    behindTokens: "WorldExplorer.WorldSettings.Position.Choices.behindTokens",
+    front: "WorldExplorer.WorldSettings.Position.Choices.front",
 }
+
+export const MODULE = "world-explorer";
+
+// World settings
+Hooks.once("init", () => {
+  game.settings.register(MODULE, "position", {
+    name: "WorldExplorer.WorldSettings.Position.Name",
+    hint: "WorldExplorer.WorldSettings.Position.Hint",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: POSITION_OPTIONS,
+    default: "behindDrawings",
+    requiresReload: false,
+    onChange: () => {
+        // If the Z-Index has changed, re-evaluate children
+        canvas.primary.sortChildren();
+    }
+  });
+  game.settings.register(MODULE, "gridRevealRadius", {
+    name: "WorldExplorer.WorldSettings.GridReveal.Name",
+    hint: "WorldExplorer.WorldSettings.GridReveal.Hint",
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 0,
+    requiresReload: false,
+    onChange: () => {
+        // If the revealRadius changed, refresh the mask
+        if (canvas.worldExplorer.enabled) canvas.worldExplorer.refreshMask();
+    }
+  });
+});
 
 Hooks.on("init", async () => {
     // Add world explorer layer
@@ -31,21 +65,45 @@ Hooks.on("init", async () => {
     const defaultRenderPartContext = SceneConfig.prototype._preparePartContext;
     SceneConfig.prototype._preparePartContext = async function(partId, context, options) {
         if (partId === "worldExplorer") {
+            const opacityPlayer = this.document.flags[MODULE].opacityPlayer ?? DEFAULT_SETTINGS.opacityPlayer;
+            const opacityGM = this.document.flags[MODULE].opacityGM ?? DEFAULT_SETTINGS.opacityGM;
+            const opacityPartial = this.document.flags[MODULE].partialOpacityPlayer ?? DEFAULT_SETTINGS.partialOpacityPlayer;
+            const partialOpacityGM = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial });
             return {
                 ...DEFAULT_SETTINGS,
-                ...this.document.flags["world-explorer"],
+                ...this.document.flags[MODULE],
                 units: this.document.grid.units,
-                POSITION_OPTIONS,
                 document: this.document,
                 tab: context.tabs[partId],
                 roles: {
                     gm: game.i18n.localize("USER.RoleGamemaster"),
                     player: game.i18n.localize("USER.RolePlayer"),
                 },
+                partialOpacityGM
             };
         }
 
         return defaultRenderPartContext.call(this, partId, context, options);
+    }
+
+    // Override onChangeForm to include world explorer
+    const default_onChangeForm = SceneConfig.prototype._onChangeForm;
+    SceneConfig.prototype._onChangeForm = function(formConfig, event) {
+        const formElements = this.form.elements;
+        const opacityPlayerElement = formElements['flags.world-explorer.opacityPlayer'];
+        const opacityGmElement = formElements['flags.world-explorer.opacityGM'];
+        const opacityPartialElement = formElements['flags.world-explorer.partialOpacityPlayer'];
+        switch (event.target) {
+            case opacityPlayerElement:
+            case opacityGmElement:
+            case opacityPartialElement:
+                const opacityPlayer = opacityPlayerElement.value;
+                const opacityGM = opacityGmElement.value;
+                const opacityPartial = opacityPartialElement.value;
+                formElements['WorldExplorerPartialOpacityGM'].value = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial });
+                break;
+        }
+        return default_onChangeForm.call(this, formConfig, event);
     }
 });
 
@@ -85,8 +143,8 @@ Hooks.on("updateScene", (scene, data) => {
     // Skip if the updated scene isn't the current one
     if (scene.id !== canvas.scene.id) return;
 
-    if (data.flags && "world-explorer" in data.flags) {
-        const worldExplorerFlags = data.flags["world-explorer"];
+    if (data.flags && MODULE in data.flags) {
+        const worldExplorerFlags = data.flags[MODULE];
 
         // If the change only affects the mask, do the throttled refresh to not interfere with token moving
         const maskOnlyFlags = ["gridData", "opacityGM", "opacityPlayer", "partialOpacityPlayer"];
@@ -154,7 +212,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
             },
             opacity: {
                 name: "opacity",
-                title: "WorldExplorer.Tools.Opacity.Title",
+                title: "WorldExplorer.Tools.Opacity",
                 icon: "fa-duotone fa-eye-low-vision",
                 toggle: true,
                 onChange: () => {

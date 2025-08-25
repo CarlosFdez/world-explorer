@@ -1,8 +1,7 @@
 import { SceneUpdater } from "./scene-updater.mjs";
-import { createPlainTexture, offsetToString } from "./util.mjs";
-import { WorldData } from "./world-data.mjs";
-
-const MODULE = "world-explorer";
+import { createPlainTexture, offsetToString, calculateGmPartialOpacity } from "./util.mjs";
+import { WorldExplorerGridData } from "./world-explorer-grid-data.mjs";
+import { MODULE } from "../index.js";
 
 /**
  * A pair of row and column coordinates of a grid space.
@@ -49,7 +48,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     get sortLayer() {
         // Tokens are 700, Drawings are 600, Tiles are 500
-        switch (this.settings.position) {
+        switch (game.settings.get(MODULE, "position")) {
             case "front":
                 return 1000;
             case "behindTokens":
@@ -118,7 +117,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     }
 
     get elevation() {
-        return this.settings.position === "front" ? Infinity : 0;
+        return game.settings.get(MODULE, "position") === "front" ? Infinity : 0;
     }
 
     /**
@@ -129,9 +128,9 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return canvas.interface.grid.highlightLayers[this.name] || canvas.interface.grid.addHighlightLayer(this.name);
     }
 
-    /** @type {WorldData} */
+    /** @type {WorldExplorerGridData} */
     get gridDataMap() {
-        this._gridDataMap ??= new WorldData(this.scene.getFlag(MODULE, "gridData") ?? {});
+        this._gridDataMap ??= new WorldExplorerGridData(this.scene.getFlag(MODULE, "gridData") ?? {});
         return this._gridDataMap;
     }
 
@@ -240,7 +239,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.color = flags.color;
         this.partialColor = flags.partialColor || this.color;
         this.image = flags.image;
-        this._gridDataMap = new WorldData(this.scene.getFlag(MODULE, "gridData") ?? {});
+        this._gridDataMap = new WorldExplorerGridData(this.scene.getFlag(MODULE, "gridData") ?? {});
         this.#syncAlphas();
     }
 
@@ -254,13 +253,12 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.overlayAlpha = (game.user.isGM ? flags.opacityGM : flags.opacityPlayer) ?? DEFAULT_SETTINGS.opacityPlayer;
         this.partialAlpha = flags.partialOpacityPlayer ?? DEFAULT_SETTINGS.partialOpacityPlayer;
 
-        // If the user is a GM, compute the percentage of partial vs non-partial, and reapply to the GM selected value.
-        // Afterwards, average it with the previous value, weighing closer to the previous the lower the alpha (so that we don't lose too much visibility)
+        // If the user is a GM, compute the partial opacity based on the other opacities
         if (game.user.isGM && flags.opacityPlayer) {
             const opacityPlayer = flags.opacityPlayer ?? DEFAULT_SETTINGS.opacityPlayer;
-            const partialRatio = this.partialAlpha / opacityPlayer;
-            const newAlpha = partialRatio * this.overlayAlpha;
-            this.partialAlpha = Math.min(this.overlayAlpha, this.partialAlpha * (1 - partialRatio) + newAlpha * partialRatio);
+            const opacityGM = this.overlayAlpha;
+            const opacityPartial = this.partialAlpha;
+            this.partialAlpha = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial });
         }
     }
 
@@ -413,7 +411,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     /** Returns the grid reveal distance in canvas coordinates (if configured) */
     getGridRevealRadius() {
-        const gridRadius = Math.max(Number(this.scene.getFlag(MODULE, "gridRevealRadius")) || 0, 0);
+        const gridRadius = Math.max(Number(game.settings.get(MODULE, "gridRevealRadius")) || 0, DEFAULT_SETTINGS.gridRevealRadius);
         if (!(gridRadius > 0)) return 0;
 
         // Convert from units to pixel radius, stolen from token.getLightRadius()
@@ -600,50 +598,66 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     #migratePositions() {
         // Get the flags and see if any of the old flags are present
         const flags = this.settings;
-        const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
-        const hasOldFlag = oldFlags.find((flag) => flag in flags);
-        if (hasOldFlag) {
-            // Get info about grid position that are in the padding, so they aren't migrated
-            const { x, y, width, height } = canvas.dimensions.sceneRect;
-            // First grid square/hex that is on the map (sceneRect)
-            const startOffset = canvas.grid.getOffset({ x: x + 1, y: y + 1 });
-            // Last grid square/hex that is on the map (sceneRect)
-            const endOffset = canvas.grid.getOffset({ x: x + width - 1, y: y + height - 1 });
+        const toReturn = false;
 
-            const newFlagData = flags[hasOldFlag].reduce((newFlag, position) => {
-                let i, j, reveal;
-                switch (hasOldFlag) {
-                    case "revealed":
-                        [i, j] = canvas.grid.getGridPositionFromPixels(...position);
-                        reveal = true;
-                        break;
-                    case "revealedPositions":
-                        [i, j] = position;
-                        reveal = true;
-                        break;
-                    case "gridPositions":
-                        [i, j, reveal] = position;
-                        reveal = reveal === "reveal" ? true : "partial";
-                        break;
-                }
-                // Only add it if this offset is on the map and not in the padding
-                if (i >= startOffset.i && j >= startOffset.j && i <= endOffset.i && j <= endOffset.j) {
-                    const offset = { i, j };
-                    const key = offsetToString(offset);
-                    newFlag[key] = { offset, reveal };
-                }
-                return newFlag;
-            }, {});
+        // Check if need to update flag version
+        const moduleVersion = foundry.packages.Module.get(MODULE).version;
+        const flagsVersion = flags.flagsVersion ?? 0;
+        if ( !foundry.utils.isNewerVersion(moduleVersion, flagsVersion) ) return toReturn; // nothing to update
 
-            const updateFlags = { "flags.world-explorer.gridData": newFlagData };
-            for (const flag of oldFlags) {
-                updateFlags[`flags.world-explorer.-=${flag}`] = null;
+        const updateFlags = {
+            "flags.world-explorer.flagsVersion": moduleVersion
+        };
+
+        // Check if migration is needed
+        if (foundry.utils.isNewerVersion('2.1.0', flagsVersion)) {
+            // Check if we need to migrate the grid data flag
+            const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
+            const hasOldFlag = oldFlags.find((flag) => flag in flags);
+            if (hasOldFlag) {
+                // Get info about grid position that are in the padding, so they aren't migrated
+                const { x, y, width, height } = canvas.dimensions.sceneRect;
+                // First grid square/hex that is on the map (sceneRect)
+                const startOffset = canvas.grid.getOffset({ x: x + 1, y: y + 1 });
+                // Last grid square/hex that is on the map (sceneRect)
+                const endOffset = canvas.grid.getOffset({ x: x + width - 1, y: y + height - 1 });
+
+                const newFlagData = flags[hasOldFlag].reduce((newFlag, position) => {
+                    let i, j, reveal;
+                    switch (hasOldFlag) {
+                        case "revealed":
+                            [i, j] = canvas.grid.getGridPositionFromPixels(...position);
+                            reveal = true;
+                            break;
+                        case "revealedPositions":
+                            [i, j] = position;
+                            reveal = true;
+                            break;
+                        case "gridPositions":
+                            [i, j, reveal] = position;
+                            reveal = reveal === "reveal" ? true : "partial";
+                            break;
+                    }
+                    // Only add it if this offset is on the map and not in the padding
+                    if (i >= startOffset.i && j >= startOffset.j && i <= endOffset.i && j <= endOffset.j) {
+                        const offset = { i, j };
+                        const key = offsetToString(offset);
+                        newFlag[key] = { offset, reveal };
+                    }
+                    return newFlag;
+                }, {});
+
+                updateFlags["flags.world-explorer.gridData"] = newFlagData;
+                for (const flag of oldFlags) {
+                    updateFlags[`flags.world-explorer.-=${flag}`] = null;
+                }
+                toReturn = true;
+                ui.notifications.info(game.i18n.localize("WorldExplorer.Notifications.Migrated"));
             }
-            this.scene.update(updateFlags);
-            ui.notifications.info(game.i18n.localize("WorldExplorer.Notifications.Migrated"));
-            return true;
         }
 
-        return false;
+        // Set current version to the flags and process added migrations
+        this.scene.update(updateFlags);
+        return toReturn;
     }
 }

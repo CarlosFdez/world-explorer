@@ -3,16 +3,16 @@
         "Name": "ワールドマスク",
         "SceneSettings": {
             "Enabled": "このシーンでModを使用する",
-            "Image": {
-                "Name": "マスク画像"
-            },
-            "Color": {
-                "Overlay": {
+            "Overlay": {
+                "Image": {
+                    "Name": "マスク画像"
+                },
+                "Color": {
                     "Name": "マスク色"
+                },
+                "Opacity": {
+                    "Name": "のマスクの不透明度"
                 }
-            },
-            "Opacity": {
-                "Title": "{role}のマスクの不透明度"
             },
             "TokenInteractions" : {
                 "TokenReveal": "コマ視認距離",

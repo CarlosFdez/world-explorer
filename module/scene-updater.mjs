@@ -1,6 +1,5 @@
-import { uniqBy, offsetToString } from "./util.mjs";
-
-const MODULE = "world-explorer";
+import { offsetToString } from "./util.mjs";
+import { MODULE } from "../index.js";
 
 /** A wrapper around a scene used to handle persistence and sequencing */
 export class SceneUpdater {

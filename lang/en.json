@@ -21,7 +21,7 @@
                 "Title": "Partially Revealed Spaces Settings",
                 "Color": {
                     "Name": "Partials Color",
-                    "Hint": "If empty, the overlay color will be used.{break}If using an overlay image while this is set, the partials will be colored for the GM, but not for the players.",
+                    "Hint": "If empty, the overlay color will be used.<br>If not empty and using an overlay image, the partials will be colored for the GM, but not for the players.",
                     "Placeholder": "Default (same as Overlay Color above)"
                 },
                 "Opacity": {

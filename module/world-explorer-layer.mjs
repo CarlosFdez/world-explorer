@@ -129,17 +129,9 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return canvas.interface.grid.highlightLayers[this.name] || canvas.interface.grid.addHighlightLayer(this.name);
     }
 
-    /** Store the gridData as a Map and filter out the revealed/partials */
-    setGridDataMap(force) {
-        if (!this._gridDataMap || force) {
-            const gridData = this.scene.getFlag(MODULE, "gridData") ?? {};
-            this._gridDataMap = new WorldData(gridData);
-        }
-    }
-
     /** @type {WorldData} */
     get gridDataMap() {
-        this.setGridDataMap();
+        this._gridDataMap ??= new WorldData(this.scene.getFlag(MODULE, "gridData") ?? {});
         return this._gridDataMap;
     }
 
@@ -248,8 +240,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.color = flags.color;
         this.partialColor = flags.partialColor || this.color;
         this.image = flags.image;
+        this._gridDataMap = new WorldData(this.scene.getFlag(MODULE, "gridData") ?? {});
         this.#syncAlphas();
-        this.setGridDataMap(true);
     }
 
     /** 
@@ -333,41 +325,40 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.partialTiles.tint = Color.from(this.partialColor);
     }
 
+    /**
+     * Create masks for the main (maskGraphic) and partial (partialMask) layers
+     * The maskGraphic must be everything except the revealed and partial tiles
+     * The partialMask must be only the partial tiles
+     */
     refreshMask() {
         if (!this.enabled) return;
         this.#syncAlphas();
         const { x, y, width, height } = canvas.dimensions.sceneRect;
 
-        /** Create masks for the main (maskGraphic) and partial (partialMask) layers
-         * The maskGraphic must be everything except the revealed and partial tiles
-         * The partialMask must be only the partial tiles
-         * Make an empty object partialMask if we are not going to use it
-         */
+        // Create the mask graphics, although partialMask may be null if not enabled
         const maskGraphic = new PIXI.Graphics();
         maskGraphic.position.set(-x, -y);
-        const partialMask = this.showPartialTiles ? new PIXI.Graphics() : {};
-        partialMask.position?.set(-x, -y);
+        const partialMask = this.showPartialTiles ? new PIXI.Graphics() : null;
+        partialMask?.position.set(-x, -y);
 
         // Cover everything with the main mask by painting it white
         maskGraphic.beginFill(0xFFFFFF, this.overlayAlpha);
         maskGraphic.drawRect(x, y, width, height);
         maskGraphic.endFill();
 
-        /** Process the partial tiles
-         * Uncover them in the main mask, but cover them in the partial mask
-         *
-         * Unless this is an image, then we need to:
-         * - Cover the tile on the main mask again, but with partial alpha
-         * - Use 0.5 alpha on the partial mask to slightly color the partial
-         *   revealed parts of the image for the GM
-        */
+        // Process the partial tiles. Uncover them in the main mask, but cover them in the partial mask
+        //
+        // Unless this is an image, then we need to:
+        // - Cover the tile on the main mask again, but with partial alpha
+        // - Use 0.5 alpha on the partial mask to slightly color the partial
+        // - reveal parts of the image for the GM
         maskGraphic.beginFill(0x000000);
-        partialMask.beginFill?.(0xFFFFFF, !this.image ? this.partialAlpha : 0.5);
+        partialMask?.beginFill(0xFFFFFF, !this.image ? this.partialAlpha : 0.5);
         // We are not drawing gridRevealRadius for partials, as that will result in overlapping transparant circles, which looks terrible
         for (const entry of this.gridDataMap.partials) {
             const poly = this._getGridPolygon(entry.offset);
             maskGraphic.drawPolygon(poly);
-            partialMask.drawPolygon?.(poly);
+            partialMask?.drawPolygon(poly);
             // If this is an image, we need to set the tile to the partial opacity, thus we have to draw a new white polygon where we just made a black one
             if (this.image) {
                 maskGraphic.beginFill(0xFFFFFF, this.partialAlpha);
@@ -377,18 +368,17 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             }
         }
 
-        /** Process the revealed tiles, uncover them in the main mask
-         * Also uncover reveal radius, if enabled, in both.
-         * This needs to happen after the partial tiles
-         */
+        // Process the revealed tiles, uncover them in the main mask
+        // Also uncover reveal radius, if enabled, in both.
+        // This needs to happen after the partial tiles
         const gridRevealRadius = this.getGridRevealRadius();
-        partialMask.beginFill?.(0x000000);
+        partialMask?.beginFill(0x000000);
         for (const entry of this.gridDataMap.revealed) {
             // Uncover circles if extend grid elements is set
             if (gridRevealRadius > 0) {
                 const { x, y } = canvas.grid.getCenterPoint(entry.offset);
                 maskGraphic.drawCircle(x, y, gridRevealRadius);
-                partialMask.drawCircle?.(x, y, gridRevealRadius);
+                partialMask?.drawCircle(x, y, gridRevealRadius);
             } else {
                 // Otherwise just uncover the revealed grid
                 const poly = this._getGridPolygon(entry.offset);
@@ -404,19 +394,18 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                 if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
                     const { x, y } = token.center;
                     maskGraphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
-                    partialMask.drawCircle?.(x, y, token.getLightRadius(tokenRevealRadius));
+                    partialMask?.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
                 }
             }
         }
 
         maskGraphic.endFill();
-        partialMask.endFill?.();
+        partialMask?.endFill();
 
-        // Render the masks
+        // Render the masks. Only render the partial mask if applicable
         canvas.app.renderer.render(maskGraphic, { renderTexture: this.hiddenTilesMaskTexture });
         maskGraphic.destroy();
-        // Only render the partial mask if applicable
-        if (this.showPartialTiles) {
+        if (this.showPartialTiles && partialMask) {
             canvas.app.renderer.render(partialMask, { renderTexture: this.partialTilesMaskTexture });
             partialMask.destroy();
         }
@@ -612,7 +601,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         // Get the flags and see if any of the old flags are present
         const flags = this.settings;
         const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
-        const hasOldFlag = oldFlags.find((flag) => { if (flag in flags) return flag; });
+        const hasOldFlag = oldFlags.find((flag) => flag in flags);
         if (hasOldFlag) {
             // Get info about grid position that are in the padding, so they aren't migrated
             const { x, y, width, height } = canvas.dimensions.sceneRect;
@@ -621,7 +610,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             // Last grid square/hex that is on the map (sceneRect)
             const endOffset = canvas.grid.getOffset({ x: x + width - 1, y: y + height - 1 });
 
-            let newFlagData = flags[hasOldFlag].reduce((newFlag, position) => {
+            const newFlagData = flags[hasOldFlag].reduce((newFlag, position) => {
                 let i, j, reveal;
                 switch (hasOldFlag) {
                     case "revealed":
@@ -645,12 +634,11 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                 }
                 return newFlag;
             }, {});
-            const updateFlags = {
-                "flags.world-explorer.gridData": newFlagData,
-            };
-            oldFlags.forEach((flag) => {
+
+            const updateFlags = { "flags.world-explorer.gridData": newFlagData };
+            for (const flag of oldFlags) {
                 updateFlags[`flags.world-explorer.-=${flag}`] = null;
-            });
+            }
             this.scene.update(updateFlags);
             ui.notifications.info(game.i18n.localize("WorldExplorer.Notifications.Migrated"));
             return true;

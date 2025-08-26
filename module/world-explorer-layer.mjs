@@ -427,20 +427,20 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     /**
      * Returns true if a grid coordinate (x, y) or offset (i, j) is revealed.
-     * @param {Point} position
+     * @param {CoordsOrOffset} CoordsOrOffset
      */
-    isRevealed({ coords = null, offset = null }) {
-        if (!coords && !offset) return null;
-        return this.gridDataMap.get({ coords, offset })?.reveal === true;
+    isRevealed(CoordsOrOffset) {
+        if (!CoordsOrOffset.coords && !CoordsOrOffset.offset) return null;
+        return this.gridDataMap.get(CoordsOrOffset)?.reveal === true;
     }
 
     /**
      * Returns true if a grid coordinate (x, y) or offset (i, j) is partly revealed.
-     * @param {Point} position
+     * @param {CoordsOrOffset} CoordsOrOffset
      */
-    isPartial({ coords = null, offset = null }) {
-        if (!coords && !offset) return null;
-        return this.gridDataMap.get({ coords, offset })?.reveal === "partial";
+    isPartial(CoordsOrOffset) {
+        if (!CoordsOrOffset.coords && !CoordsOrOffset.offset) return null;
+        return this.gridDataMap.get(CoordsOrOffset)?.reveal === "partial";
     }
 
     /** 

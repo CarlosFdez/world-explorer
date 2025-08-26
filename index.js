@@ -311,7 +311,7 @@ function updateForToken(token, data={}) {
             x: (data.x ?? token.x) + ((token.parent?.dimensions?.size / 2) ?? 0),
             y: (data.y ?? token.y) + ((token.parent?.dimensions?.size / 2) ?? 0),
         };
-        canvas.worldExplorer.reveal(center);
+        canvas.worldExplorer.setRevealed({coords: center}, true);
     }
 }
 

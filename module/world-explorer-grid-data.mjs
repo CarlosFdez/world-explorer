@@ -21,6 +21,7 @@ export class WorldExplorerGridData {
 
     /**
      * TODO: Consider returning default data instead of null 
+     * @param {CoordsOrOffset} { coords = null, offset = null }
      * @returns {GridEntry | null}
      */
     get({ coords = null, offset = null }) {

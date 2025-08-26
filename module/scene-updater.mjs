@@ -1,8 +1,10 @@
-import { uniq } from "./util.mjs";
+import { offsetToString } from "./util.mjs";
+import { MODULE } from "../index.js";
 
-const MODULE = "world-explorer";
-
-/** A wrapper around a scene used to handle persistence and sequencing */
+/**
+ * A wrapper around a scene used to handle persistence and sequencing
+ * todo: move functionality to WorldExplorerGridData to handle optimistic updates better
+ */
 export class SceneUpdater {
     constructor(scene) {
         this.scene = scene;
@@ -11,23 +13,23 @@ export class SceneUpdater {
         this.paddedSceneRect = canvas.dimensions.sceneRect.clone().pad(canvas.grid.size);
     }
 
-    reveal(x, y) {
-        this.changeState(x, y, true);
-    }
+    /**
+     * Updates a specific coordinate or offset with new data
+     * @param {CoordsOrOffset} position
+     * @param {{ reveal: boolean | "partial"}} param1
+     */
+    update({ coords = null, offset = null }, { reveal = false }) {
+        if (!coords && !offset) return;
+        if (typeof reveal !== "boolean" && reveal !== "partial") {
+            throw new Error("Invalid type, reveal must be a boolean or the value partial");
+        }
 
-    hide(x, y) {
-        this.changeState(x, y, false);
-    }
-
-    changeState(x, y, state = false) {
         // Ignore if this is outside the map's grid (sceneRect + padding of 1 grid size)
-        if (!this.paddedSceneRect.contains(x, y)) return;
+        if (coords && !this.paddedSceneRect.contains(coords.x, coords.y)) return;
 
-        const position = [i, j];
-        this.hexUpdates.set(position.toString(), {
-            position,
-            state,
-        });
+        offset ??= canvas.grid.getOffset(coords);
+        const key = offsetToString(offset);
+        this.hexUpdates.set(key, { offset, reveal });
         this.#performUpdates();
     }
 
@@ -50,37 +52,41 @@ export class SceneUpdater {
                 endOffset.i += 1;
                 endOffset.j += 1;
             }
-            const newPositions = [];
+            const newPositions = {};
             for (let i = startOffset.i; i <= endOffset.i; i++) {
                 for (let j = startOffset.j; j <= endOffset.j; j++) {
-                    newPositions.push([i, j]);
+                    const offset = { i, j };
+                    const key = offsetToString(offset);
+                    newPositions[key] = { offset, reveal };
                 }
             }
-            this.scene.setFlag(MODULE, "revealedPositions", newPositions);
+            this.scene.setFlag(MODULE, "gridData", newPositions);
         } else {
-            this.scene.setFlag(MODULE, "revealedPositions", []);
+            this.scene.unsetFlag(MODULE, "gridData");
         }
     }
 
     #performUpdates = foundry.utils.throttle(async () => {
         if (this.updating) return;
 
-        const existing = this.scene.getFlag(MODULE, "revealedPositions") ?? [];
-        const allUpdates = [...this.hexUpdates.values()];
-        const adding = allUpdates.filter((s) => s.state).map((u) => u.position);
-        const removing = new Set(allUpdates.filter((s) => !s.state).map((u) => String(u.position)));
-        const newPositions = uniq([...existing, ...adding]).filter((p) => !removing.has(String(p)));
+        const updates = {};
+        const flagBase = `flags.${MODULE}.gridData`;
+        for (const [key, value] of this.hexUpdates.entries()) {
+            if (value.reveal === false) {
+                updates[`${flagBase}.-=${key}`] = null;
+            } else {
+                updates[`${flagBase}.${key}`] = value;
+            }
+        }
 
         this.hexUpdates.clear();
-        if (String(newPositions) !== String(existing)) {
-            this.updating = true;
-            try {
-                await this.scene.setFlag(MODULE, "revealedPositions", newPositions);
-            } finally {
-                this.updating = false;
-                if (this.hexUpdates.size) {
-                    this.#performUpdates();
-                }
+        this.updating = true;
+        try {
+            await this.scene.update(updates);
+        } finally {
+            this.updating = false;
+            if (this.hexUpdates.size) {
+                this.#performUpdates();
             }
         }
     }, 50);

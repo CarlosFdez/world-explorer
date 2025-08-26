@@ -2,17 +2,45 @@
     "WorldExplorer": {
         "Name": "World Explorer",
         "SceneSettings": {
-            "Enabled": "Enable the module to work for this scene",
-            "Color": "Overlay Color",
-            "Image": "Overlay Image",
-            "Reveal": "Token Reveal (Distance)",
-            "GridReveal": {
-                "Name": "Grid Extended Reveal (Distance)",
-                "Hint": "Extends visibility of revealed grid spaces into adjacent spaces."
+            "Enabled": "Enable for this scene",
+            "Overlay": {
+                "Title": "Overlay Settings",
+                "Image": {
+                    "Name": "Overlay Image"
+                },
+                "Color": {
+                    "Name": "Overlay Color",
+                    "Hint": "Ignored if using an overlay image.",
+                    "Placeholder": "Default (#000000)"
+                },
+                "Opacity": {
+                    "Name": "{role} Opacity"
+                }
             },
-            "GM_Opacity": "GM Overlay Opacity",
-            "Player_Opacity": "Player Overlay Opacity",
-            "Persist_Explored_Areas": "Keep areas explored by tokens",
+            "Partial": {
+                "Title": "Partially Revealed Spaces Settings",
+                "Color": {
+                    "Name": "Partials Color",
+                    "Hint": "If empty, the overlay color will be used.<br>If not empty and using an overlay image, the partials will be colored for the GM, but not for the players.",
+                    "Placeholder": "Default (same as Overlay Color above)"
+                },
+                "Opacity": {
+                    "Name": "Partials Opacity",
+                    "Hint": "GM's will see a weighed opacity for the partially revealed spaces, calculated from the other opacities. This calculated value is shown on the right.",
+                    "DerivedName": "GM"
+                }
+            },
+            "TokenInteractions" : {
+                "Title": "Token Interactions",
+                "TokenReveal": "Token Reveal Distance",
+                "PersistExplored": "Keep areas explored by tokens"
+            }
+        },
+        "WorldSettings": {
+            "GridReveal": {
+                "Name": "Extended Revealed Spaces (units)",
+                "Hint": "The revealed grid spaces extend a certain amount into hidden and partially revealed spaces. Does not extend the partially revealed spaces. The units used is what's given in the scene settings."
+            },
             "Position": {
                 "Name": "Overlay Position",
                 "Hint": "Whether it should display below tiles and textures or above.",
@@ -27,14 +55,15 @@
         "Tools": {
             "Toggle": "Toggle Spaces",
             "Reveal": "Reveal Spaces",
+            "Partial": "Partially Reveal Spaces",
             "Hide": "Hide Spaces",
-            "Opacity": "GM Overlay Opacity",
-            "Reset": "Reset Scene"
+            "Reset": "Reset Scene",
+            "Opacity": "GM Overlay Opacity"
         },
         "ResetDialog": {
             "Title": "Reset Scene?",
             "Content": "Are you sure you want to reset and update the entire scene?</br>This can't be undone!",
-            "Confirm": "Type this exact code in the box below in order to proceed: <strong>{code}</strong>",
+            "Confirm": "Enter this exact code in the box below to proceed: <strong>{code}</strong>",
             "Choices": {
                 "Explored": "Show All",
                 "Unexplored": "Hide All"

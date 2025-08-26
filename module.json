@@ -2,7 +2,7 @@
   "id": "world-explorer",
   "title": "World Explorer",
   "description": "Manual reveal of background image for map traversal tracking",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "authors": [
     {
       "name": "Supe",
@@ -11,7 +11,7 @@
   ],
   "compatibility": {
     "minimum": "13",
-    "verified": "13",
+    "verified": "13.347",
     "maximum": "13"
   },
   "esmodules": [

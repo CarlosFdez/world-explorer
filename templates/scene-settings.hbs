@@ -24,18 +24,18 @@
             </div>
             <p class="hint">{{localize "WorldExplorer.SceneSettings.Overlay.Color.Hint"}}</p>
         </div>
-        {{!-- Player Opacity --}}
-        <div class="form-group">
-            <label>{{localize "WorldExplorer.SceneSettings.Overlay.Opacity.Name" role=roles.player}}</label>
-            <div class="form-fields">
-                <range-picker name="flags.world-explorer.opacityPlayer" value="{{opacityPlayer}}" min="0" max="1" step="0.05"></range-picker>
-            </div>
-        </div>
         {{!-- GM Opacity --}}
         <div class="form-group">
             <label>{{localize "WorldExplorer.SceneSettings.Overlay.Opacity.Name" role=roles.gm}}</label>
             <div class="form-fields">
                 <range-picker name="flags.world-explorer.opacityGM" value="{{opacityGM}}" min="0" max="1" step="0.05"></range-picker>
+            </div>
+        </div>
+        {{!-- Player Opacity --}}
+        <div class="form-group">
+            <label>{{localize "WorldExplorer.SceneSettings.Overlay.Opacity.Name" role=roles.player}}</label>
+            <div class="form-fields">
+                <range-picker name="flags.world-explorer.opacityPlayer" value="{{opacityPlayer}}" min="0" max="1" step="0.05"></range-picker>
             </div>
         </div>
     </fieldset>

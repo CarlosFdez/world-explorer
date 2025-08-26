@@ -42,14 +42,20 @@ Hooks.once("init", () => {
   });
 });
 
-Hooks.on("init", async () => {
+Hooks.on("init", () => {
     // Add world explorer layer
     CONFIG.Canvas.layers["worldExplorer"] = {
         layerClass: WorldExplorerLayer,
         group: "primary",
     };
+});
 
-    const { SceneConfig } = foundry.applications.sheets;
+Hooks.on("ready", () => {
+    // Figure out the scene config we need to extend. Some systems may subclass this
+    const FoundrySceneConfig = foundry.applications.sheets.SceneConfig;
+    const DefaultSceneConfig = Object.values(CONFIG.Scene.sheetClasses.base).find((d) => d.default).cls;
+    const SceneConfig = DefaultSceneConfig?.prototype instanceof FoundrySceneConfig ? DefaultSceneConfig : FoundrySceneConfig;
+
     // Add the world explorer tab and config to the scene config
     // We need to make sure the world explorer tab renders before the footer
     const label = game.i18n.localize("WorldExplorer.Name");

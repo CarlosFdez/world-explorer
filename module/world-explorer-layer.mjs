@@ -155,9 +155,12 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return this.enabled && this.state.clearing;
     }
 
-    /** Returns true if there is no image or the GM is viewing and partial color is set */
+    /** 
+     * Returns true if there is no image or the GM is viewing and partial color is set
+     * @type {Boolean}
+     * */
     get showPartialTiles() {
-        return !this.image || (this.settings.partialColor && game.user.isGM);
+        return !this.image || (this.settings.partialColor && game.user.isGM) ? true : false;
     }
 
     initialize() {
@@ -217,11 +220,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const flags = this.settings;
         const imageChanged = this.image !== flags.image;
         const becameEnabled = !this.enabled && flags.enabled;
+        const partialTilesChanged = this.partialTiles.visible !== this.showPartialTiles;
+
+        // Hide the partial tiles if an image is present and this is not the GM
+        this.partialTiles.visible = this.showPartialTiles;
 
         this.#syncSettings();
         this.refreshMask();
 
-        if (becameEnabled) {
+        if (becameEnabled || partialTilesChanged) {
             this.refreshOverlay();
         } else {
             this.refreshColors();
@@ -301,8 +308,6 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     refreshOverlay() {
         if (!this.enabled) return;
 
-        // Hide the partial tiles if an image is present and this is not the GM
-        this.partialTiles.visible = this.showPartialTiles;
         // Fill the partialTiles, if visible, with something to mask
         if (this.partialTiles.visible) {
             const { x, y, width, height } = canvas.dimensions.sceneRect;

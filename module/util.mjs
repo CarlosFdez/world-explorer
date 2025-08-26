@@ -1,8 +1,8 @@
 /**
- * 
- * @param {unknown} object 
- * @param {{ before?: string, after?: string, key: string, value: unknown }} options 
- * @returns 
+ *
+ * @param {unknown} object
+ * @param {{ before?: string, after?: string, key: string, value: unknown }} options
+ * @returns
  */
 export function insertIntoObject(object, options) {
     const result = {};
@@ -81,7 +81,8 @@ export function createPlainTexture() {
  * Afterwards, average it with the previous value, weighing closer to the previous the lower the alpha (so that we don't lose too much visibility).
  * Round to 2 decimals, as that is accurate enough and won't look weird in the scene settings.
  */
-export function calculateGmPartialOpacity({opacityPlayer, opacityGM, opacityPartial}) {
+export function calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial }) {
+    if (opacityPlayer === 0) return opacityPartial; // avoid divide by 0
     const partialRatio = opacityPartial / opacityPlayer;
     const newAlpha = partialRatio * opacityGM;
     return Math.min(opacityGM, opacityPartial * (1 - partialRatio) + newAlpha * partialRatio).toFixed(2);

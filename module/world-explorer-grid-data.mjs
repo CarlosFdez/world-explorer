@@ -9,7 +9,7 @@ export class WorldExplorerGridData {
     partials;
 
     /**
-     * @param {Record<string, GridEntry>} data 
+     * @param {Record<string, GridEntry>} data
      */
     constructor(data) {
         this.data = data;
@@ -20,8 +20,8 @@ export class WorldExplorerGridData {
     }
 
     /**
-     * TODO: Consider returning default data instead of null 
-     * @param {CoordsOrOffset} { coords = null, offset = null }
+     * TODO: Consider returning default data instead of null
+     * @param {CoordsOrOffset} coordsOrOffset
      * @returns {GridEntry | null}
      */
     get({ coords = null, offset = null }) {

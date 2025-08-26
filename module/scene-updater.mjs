@@ -1,7 +1,7 @@
 import { offsetToString } from "./util.mjs";
 import { MODULE } from "../index.js";
 
-/** 
+/**
  * A wrapper around a scene used to handle persistence and sequencing
  * todo: move functionality to WorldExplorerGridData to handle optimistic updates better
  */
@@ -15,10 +15,10 @@ export class SceneUpdater {
 
     /**
      * Updates a specific coordinate or offset with new data
-     * @param {CoordsOrOffset} position 
-     * @param {{ reveal: boolean | "partial"}} param1 
+     * @param {CoordsOrOffset} position
+     * @param {{ reveal: boolean | "partial"}} param1
      */
-    update({coords = null, offset = null}, { reveal = false }) {
+    update({ coords = null, offset = null }, { reveal = false }) {
         if (!coords && !offset) return;
         if (typeof reveal !== "boolean" && reveal !== "partial") {
             throw new Error("Invalid type, reveal must be a boolean or the value partial");

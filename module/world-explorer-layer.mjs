@@ -583,24 +583,30 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     /** 
      * Migrate from older flags to newer flag data
+     * When there's a scheme change, the schemeVersion will be changed to the module version
      * @returns {boolean} true if changes have been made
      */
     #migratePositions() {
-        // Get the flags and see if any of the old flags are present
         const flags = this.settings;
+        // When there's a scheme change, set the schemeVersion to the module version
+        const schemeVersion = '2.1.0';
+        const flagsVersion = flags.schemeVersion ?? 0;
 
-        // Check if need to update flag version
-        const moduleVersion = foundry.packages.Module.get(MODULE).version;
-        const flagsVersion = flags.flagsVersion ?? 0;
-        if ( !foundry.utils.isNewerVersion(moduleVersion, flagsVersion) ) return false; // nothing to update
+        // Stop if there is no reason to migrate
+        if ( !foundry.utils.isNewerVersion(schemeVersion, flagsVersion) ) return false;
 
         const updateFlags = {
-            "flags.world-explorer.flagsVersion": moduleVersion
+            "flags.world-explorer.schemeVersion": schemeVersion
         };
 
         // Check if migration is needed
-        if (foundry.utils.isNewerVersion('2.1.0', flagsVersion)) {
-            // Check if we need to migrate the grid data flag
+        if (foundry.utils.isNewerVersion(flagsVersion, '2.1.0')) {
+            /**
+             * v2.1.0
+             * Introduction of schemeVersion in #migratePositions
+             * Migrate to the gridData flag
+             * This includes all previous migrations
+             */
             const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
             const hasOldFlag = oldFlags.find((flag) => flag in flags);
             if (hasOldFlag) {
@@ -645,11 +651,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
 
         // Set current version to the flags and process added migrations
-        if (Object.keys(updateFlags).length) {
-            this.scene.update(updateFlags);
-            return true;
-        }
-
-        return false;
+        this.scene.update(updateFlags);
+        return true;
     }
 }

@@ -3,6 +3,8 @@ import PixiJS from "pixi.js";
 declare global {
     type EditingMode = "toggle" | "reveal" | "hide";
 
+    type CoordsOrOffset = { offset?: unknown; coords?: unknown };
+
     interface GridEntry {
         offset: { i: number; j: number; };
         reveal: boolean | "partial";

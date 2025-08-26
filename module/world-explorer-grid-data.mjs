@@ -19,7 +19,10 @@ export class WorldExplorerGridData {
         this.partials = values.filter((d) => d.reveal === "partial");
     }
 
-    /** @returns {GridEntry | null} */
+    /**
+     * TODO: Consider returning default data instead of null 
+     * @returns {GridEntry | null}
+     */
     get({ coords = null, offset = null }) {
         if (!coords && !offset) return null;
         offset ??= canvas.grid.getOffset(coords);

@@ -424,7 +424,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * Returns true if a grid coordinate (x, y) or offset (i, j) is revealed.
      * @param {Point} position
      */
-    isRevealed({coords = null, offset = null}) {
+    isRevealed({ coords = null, offset = null }) {
         if (!coords && !offset) return null;
         return this.gridDataMap.get({ coords, offset })?.reveal === true;
     }
@@ -433,36 +433,24 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * Returns true if a grid coordinate (x, y) or offset (i, j) is partly revealed.
      * @param {Point} position
      */
-    isPartial({coords = null, offset = null}) {
+    isPartial({ coords = null, offset = null }) {
         if (!coords && !offset) return null;
         return this.gridDataMap.get({ coords, offset })?.reveal === "partial";
     }
 
     /** 
      * Reveals a coordinate or offset and saves it to the scene
-     * @param {Point} position
+     * @param {CoordsOrOffset} coordsOrOffset
+     * @param { boolean | "partial" } reveal
      */
-    reveal({coords = null, offset = null}) {
-        if (!this.enabled || (!coords && !offset)) return;
-        this.updater.reveal({coords, offset});
-    }
-
-    /** 
-     * Partly reveals a coordinate or offset and saves it to the scene
-     * @param {Point} position
-     */
-    partial({coords = null, offset = null}) {
-        if (!this.enabled || (!coords && !offset)) return;
-        this.updater.partial({coords, offset});
-    }
-
-    /** 
-     * Unreveals a coordinate or offset and saves it to the scene
-     * @param {Point} position
-     */
-    unreveal({coords = null, offset = null}) {
-        if (!this.enabled || (!coords && !offset)) return;
-        this.updater.hide({coords, offset});
+    setRevealed(coordsOrOffset, reveal) {
+        if (!this.enabled || (!coordsOrOffset.coords && !coordsOrOffset.offset)) return;
+        
+        // Check if this operation is valid. todo: move check to updater
+        const current = this.gridDataMap.get(coordsOrOffset)?.reveal ?? false;
+        if (current !== reveal) {
+            this.updater.update(coordsOrOffset, { reveal });
+        }
     }
 
     /** Clears the entire scene. If reveal: true is passed, reveals all positions instead */
@@ -489,24 +477,37 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             return draggingOnCanvas !== false && this.enabled && this.editing && (draggingOnCanvas || isMainCanvas);
         };
 
-        // Renders the highlight to use for the grid's future status
-        const renderHighlight = (position, revealed, partial) => {
+        /** 
+         * Given the state of a hex and a check of the tool, determines what the hex will become.
+         * Returns null if there will be no change
+         * @param {boolean | "partial"} currentReveal
+         */
+        const checkRevealChange = (currentReveal) => {
+            const revealed = currentReveal === true;
+            const partial = currentReveal === "partial";
+            const canReveal = !revealed && ["toggle", "reveal"].includes(this.state.tool);
+            const canHide = (revealed && ["toggle", "hide"].includes(this.state.tool)) || (partial && this.state.tool === "hide");
+            const canPartial = !partial && this.state.tool === "partial";
+            return canReveal ? true : canHide ? false : canPartial ? "partial" : null;
+        }
+
+        /** 
+         * Renders the highlight to use for the grid's future status. If null, doesn't render anything
+         * @param {boolean | "partial" | null} newReveal
+         */
+        const renderHighlight = (position, newReveal) => {
             const { x, y } = canvas.grid.getTopLeftPoint(position);
             this.highlightLayer.clear();
 
             // In certain modes, we only go one way, check if the operation is valid
-            const canReveal = !revealed && ["toggle", "reveal"].includes(this.state.tool);
-            const canHide = (revealed && ["toggle", "hide"].includes(this.state.tool)) || (partial && this.state.tool === "hide");
-            const canPartial = !partial && this.state.tool === "partial";
-
-            if (canReveal || canHide || canPartial) {
+            if (newReveal !== null) {
                 // blue color for revealing tiles
                 let color = 0x0022FF;
-                if (canPartial) {
+                if (newReveal === "partial") {
                     // default to purple for making tiles partly revealed if no partial
                     // color is defined, otherwise it would look identical to the hide tool
                     color = this.settings.partialColor ? Color.from(this.partialColor) : 0x7700FF;
-                } else if (canHide) {
+                } else if (newReveal === false) {
                     color = Color.from(this.color);
                 }
                 canvas.interface.grid.highlightPosition(this.highlightLayer.name, { x, y, color, border: color });
@@ -528,25 +529,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
             const coords = event.data.getLocalPosition(canvas.app.stage);
             const offset = canvas.grid.getOffset(coords);
-            const revealed = this.isRevealed({coords, offset});
-            const partial = this.isPartial({coords, offset});
 
             // In certain modes, we only go one way, check if the operation is valid
-            const canReveal = !revealed && ["toggle", "reveal"].includes(this.state.tool);
-            const canHide = (revealed && ["toggle", "hide"].includes(this.state.tool)) || (partial && this.state.tool === "hide");
-            const canPartial = !partial && this.state.tool === "partial";
-
-            if (canHide) {
-                this.unreveal({coords, offset});
-            } else if (canReveal) {
-                this.reveal({coords, offset});
-            } else if (canPartial) {
-                this.partial({coords, offset});
-            } else {
-                return;
+            const currentStatus = this.gridDataMap.get({coords, offset})?.reveal ?? false;
+            const newReveal = checkRevealChange(currentStatus);
+            if (newReveal !== null) {
+                this.setRevealed({ coords, offset }, newReveal);
+                renderHighlight(coords, newReveal);
             }
 
-            renderHighlight(coords, revealed, partial);
         });
 
         canvas.stage.addListener('pointermove', (event) => {
@@ -567,19 +558,15 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
             // Get mouse position translated to canvas coords
             const coords = event.data.getLocalPosition(canvas.app.stage);
             const offset = canvas.grid.getOffset(coords);
-            const revealed = this.isRevealed({coords, offset});
-            const partial = this.isPartial({coords, offset});
-            renderHighlight(coords, revealed, partial);
+            const currentStatus = this.gridDataMap.get({coords, offset})?.reveal ?? false;
+            const newReveal = checkRevealChange(currentStatus);
+            renderHighlight(coords, newReveal);
 
             // For brush or eraser modes, allow click drag drawing
             if (event.data.buttons === 1 && this.state.tool !== "toggle") {
                 draggingOnCanvas = true;
-                if ((revealed || partial) && this.state.tool === "hide") {
-                    this.unreveal({coords, offset});
-                } else if (!revealed && this.state.tool === "reveal") {
-                    this.reveal({coords, offset});
-                } else if (!partial && this.state.tool === "partial") {
-                    this.partial({coords, offset});
+                if (newReveal !== null) {
+                    this.setRevealed({coords, offset}, newReveal);
                 }
             }
         });

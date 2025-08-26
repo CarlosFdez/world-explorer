@@ -1,7 +1,10 @@
 import { offsetToString } from "./util.mjs";
 import { MODULE } from "../index.js";
 
-/** A wrapper around a scene used to handle persistence and sequencing */
+/** 
+ * A wrapper around a scene used to handle persistence and sequencing
+ * todo: move functionality to WorldExplorerGridData to handle optimistic updates better
+ */
 export class SceneUpdater {
     constructor(scene) {
         this.scene = scene;
@@ -10,20 +13,17 @@ export class SceneUpdater {
         this.paddedSceneRect = canvas.dimensions.sceneRect.clone().pad(canvas.grid.size);
     }
 
-    reveal(position) {
-        this.#changeState(position, true);
-    }
-
-    partial(position) {
-        this.#changeState(position, "partial");
-    }
-
-    hide(position) {
-        this.#changeState(position, false);
-    }
-
-    #changeState({coords = null, offset = null}, reveal = false) {
+    /**
+     * Updates a specific coordinate or offset with new data
+     * @param {CoordsOrOffset} position 
+     * @param {{ reveal: boolean | "partial"}} param1 
+     */
+    update({coords = null, offset = null}, { reveal = false }) {
         if (!coords && !offset) return;
+        if (typeof reveal !== "boolean" && reveal !== "partial") {
+            throw new Error("Invalid type, reveal must be a boolean or the value partial");
+        }
+
         // Ignore if this is outside the map's grid (sceneRect + padding of 1 grid size)
         if (coords && !this.paddedSceneRect.contains(coords.x, coords.y)) return;
 
@@ -71,13 +71,13 @@ export class SceneUpdater {
 
         const updates = {};
         const flagBase = `flags.${MODULE}.gridData`;
-        this.hexUpdates.forEach((value, key) => {
+        for (const [key, value] of this.hexUpdates.entries()) {
             if (value.reveal === false) {
                 updates[`${flagBase}.-=${key}`] = null;
             } else {
                 updates[`${flagBase}.${key}`] = value;
             }
-        });
+        }
 
         this.hexUpdates.clear();
         this.updating = true;

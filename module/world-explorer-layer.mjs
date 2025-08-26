@@ -605,7 +605,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         };
 
         // Check if migration is needed
-        if (foundry.utils.isNewerVersion(flagsVersion, '2.1.0')) {
+        if (foundry.utils.isNewerVersion('2.1.0', flagsVersion)) {
             /**
              * v2.1.0
              * Introduction of schemeVersion in #migratePositions

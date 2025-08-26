@@ -594,16 +594,18 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return new PIXI.Polygon(canvas.grid.getVertices(offset));
     }
 
-    /** Migrate from older flags to newer flag data */
+    /** 
+     * Migrate from older flags to newer flag data
+     * @returns {boolean} true if changes have been made
+     */
     #migratePositions() {
         // Get the flags and see if any of the old flags are present
         const flags = this.settings;
-        const toReturn = false;
 
         // Check if need to update flag version
         const moduleVersion = foundry.packages.Module.get(MODULE).version;
         const flagsVersion = flags.flagsVersion ?? 0;
-        if ( !foundry.utils.isNewerVersion(moduleVersion, flagsVersion) ) return toReturn; // nothing to update
+        if ( !foundry.utils.isNewerVersion(moduleVersion, flagsVersion) ) return false; // nothing to update
 
         const updateFlags = {
             "flags.world-explorer.flagsVersion": moduleVersion
@@ -651,13 +653,16 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
                 for (const flag of oldFlags) {
                     updateFlags[`flags.world-explorer.-=${flag}`] = null;
                 }
-                toReturn = true;
                 ui.notifications.info(game.i18n.localize("WorldExplorer.Notifications.Migrated"));
             }
         }
 
         // Set current version to the flags and process added migrations
-        this.scene.update(updateFlags);
-        return toReturn;
+        if (Object.keys(updateFlags).length) {
+            this.scene.update(updateFlags);
+            return true;
+        }
+
+        return false;
     }
 }

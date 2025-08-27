@@ -74,7 +74,7 @@ Hooks.on("ready", () => {
             const opacityPlayer = this.document.flags[MODULE].opacityPlayer ?? DEFAULT_SETTINGS.opacityPlayer;
             const opacityGM = this.document.flags[MODULE].opacityGM ?? DEFAULT_SETTINGS.opacityGM;
             const opacityPartial = this.document.flags[MODULE].partialOpacityPlayer ?? DEFAULT_SETTINGS.partialOpacityPlayer;
-            const partialOpacityGM = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial });
+            const partialOpacityGM = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial }).toFixed(2);
             return {
                 ...DEFAULT_SETTINGS,
                 ...this.document.flags[MODULE],
@@ -106,7 +106,7 @@ Hooks.on("ready", () => {
                 const opacityPlayer = opacityPlayerElement.value;
                 const opacityGM = opacityGmElement.value;
                 const opacityPartial = opacityPartialElement.value;
-                formElements['WorldExplorerPartialOpacityGM'].value = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial });
+                formElements['WorldExplorerPartialOpacityGM'].value = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial }).toFixed(2);
                 break;
         }
         return default_onChangeForm.call(this, formConfig, event);

@@ -591,30 +591,28 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     /**
      * Migrate from older flags to newer flag data
-     * When there's a scheme change, the schemeVersion will be changed to the module version
+     * When there's a schema change, the schemaVersion will be changed to the module version
      * @returns {boolean} true if changes have been made
      */
     #migratePositions() {
         const flags = this.settings;
-        // When there's a scheme change, set the schemeVersion to the module version
+        // When there's a schema change, set the schemaVersion to the module version
         const schemaVersion = "2.1.0";
-        const flagsVersion = flags.schemeVersion ?? 0;
+        const flagsVersion = flags.schemaVersion ?? 0;
 
         // Stop if there is no reason to migrate
         if (!foundry.utils.isNewerVersion(schemaVersion, flagsVersion)) return false;
 
         const updateFlags = {
-            "flags.world-explorer.schemeVersion": schemaVersion,
+            "flags.world-explorer.schemaVersion": schemaVersion,
         };
 
         // Check if migration is needed
         if (foundry.utils.isNewerVersion("2.1.0", flagsVersion)) {
-            /**
-             * v2.1.0
-             * Introduction of schemeVersion in #migratePositions
-             * Migrate to the gridData flag
-             * This includes all previous migrations
-             */
+            // v2.1.0
+            // Introduction of schemaVersion in #migratePositions
+            // Migrate to the gridData flag
+            // This includes all previous migrations
             const oldFlags = ["revealed", "revealedPositions", "gridPositions"];
             const hasOldFlag = oldFlags.find((flag) => flag in flags);
             if (hasOldFlag) {

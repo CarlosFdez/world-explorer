@@ -17,7 +17,7 @@ export const DEFAULT_SETTINGS = {
     gridRevealRadius: 0,
     opacityGM: 0.7,
     opacityPlayer: 1,
-    partialOpacityPlayer: 0.3,
+    partialOpacityPlayer: 0.4,
     persistExploredAreas: false,
     position: "behindDrawings",
 };

@@ -1,23 +1,22 @@
 {
     "WorldExplorer": {
         "Name": "ワールドマスク",
-        "SceneSettings": {
-            "Enabled": "このシーンでModを使用する",
-            "Overlay": {
-                "Image": {
-                    "Name": "マスク画像"
-                },
-                "Color": {
-                    "Name": "マスク色"
-                },
-                "Opacity": {
-                    "Name": "のマスクの不透明度"
-                }
+        "FIELDS": {
+            "image": {
+                "Name": "マスク画像"
             },
-            "TokenInteractions" : {
-                "TokenReveal": "コマ視認距離",
-                "PersistExplored": "コマが見たマスクを記憶する"
+            "color": {
+                "Name": "マスク色"
+            },
+            "persistExploredAreas": {
+                "Name": "コマが見たマスクを記憶する"
+            },
+            "revealRadius": {
+                "Name": "コマ視認距離"
             }
+        },
+        "SceneSettings": {
+            "Enabled": "このシーンでModを使用する"
         },
         "Tools": {
             "Toggle": "タイル切替",

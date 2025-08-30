@@ -19,7 +19,6 @@ export const DEFAULT_SETTINGS = {
     opacityPlayer: 1,
     partialOpacityPlayer: 0.4,
     persistExploredAreas: false,
-    position: "behindDrawings",
 };
 
 // DEV NOTE: On sorting layers
@@ -110,7 +109,10 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     /** Any settings we are currently previewing. Currently unused, will be used once we're more familiar with the scene config preview */
     previewSettings = {};
 
-    /** @returns {WorldExplorerFlags} */
+    /**
+     * TODO: cache between updates 
+     * @returns {WorldExplorerFlags} 
+     */
     get settings() {
         const settings = this.scene.flags[MODULE] ?? {};
         return { ...DEFAULT_SETTINGS, ...settings, ...this.previewSettings };
@@ -195,7 +197,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         this.addChild(this.partialTiles.mask);
 
         this.#syncSettings();
-        this.#migratePositions();
+        this.#migrateData();
     }
 
     async _draw() {
@@ -213,7 +215,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
     /** Triggered when the current scene updates */
     update() {
-        if (this.#migratePositions()) {
+        if (this.#migrateData()) {
             return;
         }
 
@@ -417,7 +419,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     /** Returns the grid reveal distance in canvas coordinates (if configured) */
     getGridRevealRadius() {
         const gridRadius = Math.max(
-            Number(game.settings.get(MODULE, "gridRevealRadius")) || 0,
+            Number(this.settings.gridRevealRadius) || 0,
             DEFAULT_SETTINGS.gridRevealRadius
         );
         if (!(gridRadius > 0)) return 0;
@@ -594,8 +596,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      * When there's a schema change, the schemaVersion will be changed to the module version
      * @returns {boolean} true if changes have been made
      */
-    #migratePositions() {
-        const flags = this.settings;
+    #migrateData() {
+        const flags = this.scene.flags[MODULE] ?? {};
         // When there's a schema change, set the schemaVersion to the module version
         const schemaVersion = "2.1.0";
         const flagsVersion = flags.schemaVersion ?? 0;

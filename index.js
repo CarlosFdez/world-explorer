@@ -27,19 +27,6 @@ Hooks.once("init", () => {
         canvas.primary.sortChildren();
     }
   });
-  game.settings.register(MODULE, "gridRevealRadius", {
-    name: "WorldExplorer.WorldSettings.GridReveal.Name",
-    hint: "WorldExplorer.WorldSettings.GridReveal.Hint",
-    scope: "world",
-    config: true,
-    type: Number,
-    default: 0,
-    requiresReload: false,
-    onChange: () => {
-        // If the revealRadius changed, refresh the mask
-        if (canvas.worldExplorer.enabled) canvas.worldExplorer.refreshMask();
-    }
-  });
 });
 
 Hooks.on("init", () => {

@@ -66,7 +66,7 @@ export class SceneUpdater {
         }
     }
 
-    #performUpdates = foundry.utils.throttle(async () => {
+    #performUpdates = foundry.utils.debounce(async () => {
         if (this.updating) return;
 
         const updates = {};

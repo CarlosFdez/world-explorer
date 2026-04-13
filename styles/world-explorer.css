@@ -13,3 +13,11 @@
     padding: 0;
     font-size: 0.8em;
 }
+/** Avoid the ugliness when the title wraps in the scene config **/
+.application.scene-config {
+    .top-tabs {
+        line-height: 1.25;
+        padding-top: var(--spacer-8);
+        padding-bottom: var(--spacer-8);
+    }
+}

@@ -15,7 +15,7 @@
 }
 /** Avoid the ugliness when the title wraps in the scene config **/
 .application.scene-config {
-    .top-tabs {
+    .sheet-tabs[data-application-part="tabs"] {
         line-height: 1.25;
         padding-top: var(--spacer-8);
         padding-bottom: var(--spacer-8);

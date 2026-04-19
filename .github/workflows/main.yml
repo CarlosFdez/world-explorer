@@ -1,9 +1,8 @@
 name: Module CI/CD
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    branches: [main]
 
 jobs:
   build:
@@ -25,14 +24,9 @@ jobs:
       - name: Get Version
         shell: bash
         id: get-version
-        run: echo "::set-output name=version::$(node ./.github/workflows/get-version.js)"
-
-      # Generate changelog for release body
-      - name: Changelog
-        id: Changelog
-        uses: scottbrenner/generate-changelog-action@master
-        env:
-          REPO: ${{ github.repository }}
+        run: |
+          MODULE_VERSION=$(grep -oP '(?<="version": ")[^"]+' module.json | tr -d '\n')
+          echo "moduleVersion=$MODULE_VERSION" >> $GITHUB_ENV
 
       # Create a release for this specific version
       - name: Create Release
@@ -40,25 +34,9 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true # set this to false if you want to prevent updating existing releases
-          name: ${{ steps.get-version.outputs.version }}
-          body: |
-            ${{ steps.Changelog.outputs.changelog }}
+          name: ${{ env.moduleVersion }}
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: './module.json,./module.zip'
-          tag_name: ${{ steps.get-version.outputs.version }}
-
-      # Update the 'latest' release
-      - name: Create Release
-        id: create_latest_release
-        uses: ncipollo/release-action@v1
-        if: endsWith(github.ref, 'master')
-        with:
-          allowUpdates: true
-          name: Latest
-          draft: false
-          prerelease: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: './module.json,./module.zip'
-          tag: latest
+          tag: v${{ env.moduleVersion }}

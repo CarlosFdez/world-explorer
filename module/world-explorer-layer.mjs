@@ -377,11 +377,20 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         // Process the revealed tiles, uncover them in the main mask
         // Also uncover reveal radius, if enabled, in both.
         // This needs to happen after the partial tiles
+        const isHexGrid = canvas.grid.isHexagonal;
         const gridRevealRadius = this.getGridRevealRadius();
+        const gridRevealHexSteps = isHexGrid ? this._getHexStepCount(this.settings.gridRevealRadius) : 0;
         partialMask?.beginFill(0x000000);
         for (const entry of this.gridDataMap.revealed) {
-            // Uncover circles if extend grid elements is set
-            if (gridRevealRadius > 0) {
+            if (gridRevealHexSteps > 0) {
+                // On hex grids, uncover the full ring of adjacent hexes instead of a circle
+                for (const offset of this._getHexesInRange(entry.offset, gridRevealHexSteps)) {
+                    const poly = this._getGridPolygon(offset);
+                    maskGraphic.drawPolygon(poly);
+                    partialMask?.drawPolygon(poly);
+                }
+            } else if (gridRevealRadius > 0) {
+                // Uncover circles if extend grid elements is set
                 const { x, y } = canvas.grid.getCenterPoint(entry.offset);
                 maskGraphic.drawCircle(x, y, gridRevealRadius);
                 partialMask?.drawCircle(x, y, gridRevealRadius);
@@ -394,7 +403,20 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
         // Uncover observer tokens, if set
         const tokenRevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
-        if (tokenRevealRadius > 0) {
+        const tokenRevealHexSteps = isHexGrid ? this._getHexStepCount(tokenRevealRadius) : 0;
+        if (tokenRevealHexSteps > 0) {
+            for (const token of canvas.tokens.placeables) {
+                const document = token.document;
+                if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
+                    const originOffset = canvas.grid.getOffset(token.center);
+                    for (const offset of this._getHexesInRange(originOffset, tokenRevealHexSteps)) {
+                        const poly = this._getGridPolygon(offset);
+                        maskGraphic.drawPolygon(poly);
+                        partialMask?.drawPolygon(poly);
+                    }
+                }
+            }
+        } else if (tokenRevealRadius > 0) {
             for (const token of canvas.tokens.placeables) {
                 const document = token.document;
                 if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
@@ -429,6 +451,38 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const u = Math.abs(gridRadius);
         const hw = canvas.grid.sizeX / 2;
         return ((u / canvas.dimensions.distance) * canvas.dimensions.size + hw) * Math.sign(gridRadius);
+    }
+
+    /** Converts a distance expressed in scene grid units into a number of grid steps (e.g. hexes) */
+    _getHexStepCount(units) {
+        return Math.max(Math.round(Math.abs(Number(units) || 0) / canvas.scene.grid.distance), 0);
+    }
+
+    /**
+     * Returns the offsets of every grid space within `steps` adjacency-hops of `originOffset`,
+     * including the origin itself. Used to reveal a clean ring of hexes around a point rather
+     * than a circle that cuts through partial cells.
+     * @param {GridOffset} originOffset
+     * @param {number} steps
+     */
+    _getHexesInRange(originOffset, steps) {
+        const key = (offset) => `${offset.i},${offset.j}`;
+        const visited = new Map([[key(originOffset), originOffset]]);
+        let frontier = [originOffset];
+        for (let i = 0; i < steps; i++) {
+            const next = [];
+            for (const offset of frontier) {
+                for (const adjacent of canvas.grid.getAdjacentOffsets(offset)) {
+                    const adjacentKey = key(adjacent);
+                    if (!visited.has(adjacentKey)) {
+                        visited.set(adjacentKey, adjacent);
+                        next.push(adjacent);
+                    }
+                }
+            }
+            frontier = next;
+        }
+        return visited.values();
     }
 
     /**

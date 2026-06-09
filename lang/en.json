@@ -28,6 +28,9 @@
             "persistExploredAreas": {
                 "Name": "Keep areas explored by tokens"
             },
+            "useSpaces": {
+                "Name": "Bound explored areas by grid spaces instead of radius"
+            },
             "position": {
                 "Name": "Overlay Position",
                 "Hint": "Whether it should display below tiles and textures or above.",

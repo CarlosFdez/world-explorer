@@ -18,6 +18,7 @@ declare global {
         opacityGM: number;
         opacityPlayer: number;
         persistExploredAreas: boolean;
+        useSpaces: boolean;
         image?: string;
         enabled?: boolean;
         zIndex: number;

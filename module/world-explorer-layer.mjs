@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
     opacityPlayer: 1,
     partialOpacityPlayer: 0.4,
     persistExploredAreas: false,
+    useSpaces: false,
     position: "behindDrawings",
 };
 
@@ -377,14 +378,14 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         // Process the revealed tiles, uncover them in the main mask
         // Also uncover reveal radius, if enabled, in both.
         // This needs to happen after the partial tiles
-        const isHexGrid = canvas.grid.isHexagonal;
+        const useSpaces = canvas.worldExplorer.settings.useSpaces;
         const gridRevealRadius = this.getGridRevealRadius();
-        const gridRevealHexSteps = isHexGrid ? this._getHexStepCount(this.settings.gridRevealRadius) : 0;
+        const gridRevealSteps = useSpaces ? this._getSpaceStepCount(this.settings.gridRevealRadius) : 0;
         partialMask?.beginFill(0x000000);
         for (const entry of this.gridDataMap.revealed) {
-            if (gridRevealHexSteps > 0) {
-                // On hex grids, uncover the full ring of adjacent hexes instead of a circle
-                for (const offset of this._getHexesInRange(entry.offset, gridRevealHexSteps)) {
+            if (gridRevealSteps > 0) {
+                // When using spaces, uncover the full ring of adjacent spaces instead of a circle
+                for (const offset of this._getSpacesInRange(entry.offset, gridRevealSteps)) {
                     const poly = this._getGridPolygon(offset);
                     maskGraphic.drawPolygon(poly);
                     partialMask?.drawPolygon(poly);
@@ -403,13 +404,13 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
 
         // Uncover observer tokens, if set
         const tokenRevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
-        const tokenRevealHexSteps = isHexGrid ? this._getHexStepCount(tokenRevealRadius) : 0;
-        if (tokenRevealHexSteps > 0) {
+        const tokenRevealSteps = useSpaces ? this._getSpaceStepCount(tokenRevealRadius) : 0;
+        if (tokenRevealSteps > 0) {
             for (const token of canvas.tokens.placeables) {
                 const document = token.document;
                 if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
                     const originOffset = canvas.grid.getOffset(token.center);
-                    for (const offset of this._getHexesInRange(originOffset, tokenRevealHexSteps)) {
+                    for (const offset of this._getSpacesInRange(originOffset, tokenRevealSteps)) {
                         const poly = this._getGridPolygon(offset);
                         maskGraphic.drawPolygon(poly);
                         partialMask?.drawPolygon(poly);
@@ -453,19 +454,19 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         return ((u / canvas.dimensions.distance) * canvas.dimensions.size + hw) * Math.sign(gridRadius);
     }
 
-    /** Converts a distance expressed in scene grid units into a number of grid steps (e.g. hexes) */
-    _getHexStepCount(units) {
+    /** Converts a distance expressed in scene grid units into a number of grid steps (e.g. hexes or squares) */
+    _getSpaceStepCount(units) {
         return Math.max(Math.round(Math.abs(Number(units) || 0) / canvas.scene.grid.distance), 0);
     }
 
     /**
      * Returns the offsets of every grid space within `steps` adjacency-hops of `originOffset`,
-     * including the origin itself. Used to reveal a clean ring of hexes around a point rather
+     * including the origin itself. Used to reveal a clean ring of spaces around a point rather
      * than a circle that cuts through partial cells.
      * @param {GridOffset} originOffset
      * @param {number} steps
      */
-    _getHexesInRange(originOffset, steps) {
+    _getSpacesInRange(originOffset, steps) {
         const key = (offset) => `${offset.i},${offset.j}`;
         const visited = new Map([[key(originOffset), originOffset]]);
         let frontier = [originOffset];

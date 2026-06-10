@@ -40,7 +40,7 @@
             },
             "tokenReveal": {
                 "label": "Token Reveal Distance",
-                "hint": "Distance (from center) to temporarily reveal around friendly tokens. Zero reveals current space only, and blank reveals nothing."
+                "hint": "Distance (from center) to temporarily reveal around friendly tokens. Zero reveals the token's space only, and blank reveals nothing."
             },
             "gridReveal": {
                 "label": "Extend Revealed Distance",

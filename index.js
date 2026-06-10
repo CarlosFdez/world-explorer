@@ -46,10 +46,12 @@ Hooks.on("ready", () => {
             const opacityPartial = flags?.partialOpacityPlayer ?? DEFAULT_SETTINGS.partialOpacityPlayer;
             const partialOpacityGM = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial }).toFixed(2);
             return {
-                ...DEFAULT_SETTINGS,
-                ...(flags ?? {}),
+                ...foundry.utils.mergeObject(DEFAULT_SETTINGS, flags ?? {}, { inplace: false }),
                 POSITION_OPTIONS,
-                units: this.document.grid.units,
+                revealUnitOptions: {
+                    grid: this.document.grid.units,
+                    spaces: game.i18n.localize("WorldExplorer.SpacesUnit"),
+                },
                 document: this.document,
                 tab: context.tabs[partId],
                 roles: {
@@ -70,6 +72,7 @@ Hooks.on("ready", () => {
         const opacityPlayerElement = formElements['flags.world-explorer.opacityPlayer'];
         const opacityGmElement = formElements['flags.world-explorer.opacityGM'];
         const opacityPartialElement = formElements['flags.world-explorer.partialOpacityPlayer'];
+        const gridRevealValueEl = formElements['flags.world-explorer.gridReveal.value'];
         switch (event.target) {
             case opacityPlayerElement:
             case opacityGmElement:
@@ -80,6 +83,7 @@ Hooks.on("ready", () => {
                 formElements['WorldExplorerPartialOpacityGM'].value = calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPartial }).toFixed(2);
                 break;
         }
+        if (gridRevealValueEl) gridRevealValueEl.value ||= 0;
         return default_onChangeForm.call(this, formConfig, event);
     }
 });

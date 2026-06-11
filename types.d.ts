@@ -13,8 +13,6 @@ declare global {
 
     interface WorldExplorerFlags {
         color: string;
-        revealRadius: number;
-        gridRevealRadius: number;
         opacityGM: number;
         opacityPlayer: number;
         persistExploredAreas: boolean;
@@ -23,6 +21,14 @@ declare global {
         zIndex: number;
         gridData?: Record<string, GridEntry | undefined>;
         position: Position;
+        tokenReveal: {
+            units: "grid" | "spaces";
+            value: number | null;
+        };
+        gridReveal: {
+            units: "grid" | "spaces";
+            value: number;
+        };
     }
 
     interface WorldExplorerState {

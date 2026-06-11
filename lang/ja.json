@@ -3,16 +3,16 @@
         "Name": "ワールドマスク",
         "FIELDS": {
             "image": {
-                "Name": "マスク画像"
+                "label": "マスク画像"
             },
             "color": {
-                "Name": "マスク色"
+                "label": "マスク色"
             },
             "persistExploredAreas": {
-                "Name": "コマが見たマスクを記憶する"
+                "label": "コマが見たマスクを記憶する"
             },
-            "revealRadius": {
-                "Name": "コマ視認距離"
+            "tokenReveal": {
+                "label": "コマ視認距離"
             }
         },
         "SceneSettings": {

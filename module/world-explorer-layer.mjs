@@ -1,5 +1,5 @@
 import { SceneUpdater } from "./scene-updater.mjs";
-import { createPlainTexture, offsetToString, calculateGmPartialOpacity } from "./util.mjs";
+import { createPlainTexture, offsetToString, calculateGmPartialOpacity, unitsToPixels } from "./util.mjs";
 import { WorldExplorerGridData } from "./world-explorer-grid-data.mjs";
 import { MODULE } from "../index.js";
 
@@ -10,17 +10,24 @@ import { MODULE } from "../index.js";
  * @property {number} j    The column coordinate
  */
 
-export const DEFAULT_SETTINGS = {
+/** @type {WorldExplorerFlags} */
+export const DEFAULT_SETTINGS = Object.seal({
     color: "#000000",
     partialColor: "",
-    revealRadius: 0,
-    gridRevealRadius: 0,
+    tokenReveal: {
+        units: "spaces",
+        value: null
+    },
+    gridReveal: {
+        units: "spaces",
+        value: 0
+    },
     opacityGM: 0.7,
     opacityPlayer: 1,
     partialOpacityPlayer: 0.4,
     persistExploredAreas: false,
     position: "behindDrawings",
-};
+});
 
 // DEV NOTE: On sorting layers
 // Elements within the primary canvas group are sorted via the following heuristics:
@@ -116,7 +123,8 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
      */
     get settings() {
         const settings = this.scene.flags[MODULE] ?? {};
-        return { ...DEFAULT_SETTINGS, ...settings, ...this.previewSettings };
+        const merged = foundry.utils.mergeObject(DEFAULT_SETTINGS, settings, { inplace: false });
+        return foundry.utils.mergeObject(merged, this.previewSettings);
     }
 
     get elevation() {
@@ -377,30 +385,41 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         // Process the revealed tiles, uncover them in the main mask
         // Also uncover reveal radius, if enabled, in both.
         // This needs to happen after the partial tiles
-        const gridRevealRadius = this.getGridRevealRadius();
+        const gridReveal = this.settings.gridReveal;
         partialMask?.beginFill(0x000000);
         for (const entry of this.gridDataMap.revealed) {
-            // Uncover circles if extend grid elements is set
-            if (gridRevealRadius > 0) {
+            if (gridReveal.units === "grid" && gridReveal.value > 0) {
+                // Uncover circles if extend grid elements is set
                 const { x, y } = canvas.grid.getCenterPoint(entry.offset);
-                maskGraphic.drawCircle(x, y, gridRevealRadius);
-                partialMask?.drawCircle(x, y, gridRevealRadius);
+                const pixels = unitsToPixels(gridReveal.value);
+                maskGraphic.drawCircle(x, y, pixels);
+                partialMask?.drawCircle(x, y, pixels);
             } else {
-                // Otherwise just uncover the revealed grid
-                const poly = this._getGridPolygon(entry.offset);
-                maskGraphic.drawPolygon(poly);
+                // When using spaces, uncover the full ring of adjacent spaces instead of a circle
+                // Radius 0 returns just the center space
+                for (const offset of this._getSpacesInRange(entry.offset, gridReveal.value ?? 0)) {
+                    const poly = this._getGridPolygon(offset);
+                    maskGraphic.drawPolygon(poly);
+                    partialMask?.drawPolygon(poly);
+                }
             }
         }
 
         // Uncover observer tokens, if set
-        const tokenRevealRadius = Math.max(Number(this.scene.getFlag(MODULE, "revealRadius")) || 0, 0);
-        if (tokenRevealRadius > 0) {
-            for (const token of canvas.tokens.placeables) {
-                const document = token.document;
-                if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
-                    const { x, y } = token.center;
-                    maskGraphic.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
-                    partialMask?.drawCircle(x, y, token.getLightRadius(tokenRevealRadius));
+        const tokenReveal = this.settings.tokenReveal;
+        if (tokenReveal.units === "grid" && tokenReveal.value >= 0) {
+            for (const token of this._getViewableTokens()) {
+                const { x, y } = token.center;
+                maskGraphic.drawCircle(x, y, token.getLightRadius(tokenReveal.value));
+                partialMask?.drawCircle(x, y, token.getLightRadius(tokenReveal.value));
+            }
+        } else if (tokenReveal.units === "spaces" && tokenReveal.value >= 0) {
+            for (const token of this._getViewableTokens()) {
+                const originOffset = canvas.grid.getOffset(token.center);
+                for (const offset of this._getSpacesInRange(originOffset, tokenReveal.value)) {
+                    const poly = this._getGridPolygon(offset);
+                    maskGraphic.drawPolygon(poly);
+                    partialMask?.drawPolygon(poly);
                 }
             }
         }
@@ -417,18 +436,43 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         }
     }
 
-    /** Returns the grid reveal distance in canvas coordinates (if configured) */
-    getGridRevealRadius() {
-        const gridRadius = Math.max(
-            Number(this.settings.gridRevealRadius) || 0,
-            DEFAULT_SETTINGS.gridRevealRadius
-        );
-        if (!(gridRadius > 0)) return 0;
+    *_getViewableTokens() {
+        for (const token of canvas.tokens.placeables) {
+            const document = token.document;
+            if (document.disposition === CONST.TOKEN_DISPOSITIONS.FRIENDLY || document.hasPlayerOwner) {
+                yield token;
+            }
+        }
+    }
 
-        // Convert from units to pixel radius, stolen from token.getLightRadius()
-        const u = Math.abs(gridRadius);
-        const hw = canvas.grid.sizeX / 2;
-        return ((u / canvas.dimensions.distance) * canvas.dimensions.size + hw) * Math.sign(gridRadius);
+    /**
+     * Returns the offsets of every grid space within `steps` adjacency-hops of `originOffset`,
+     * including the origin itself. Used to reveal a clean ring of spaces around a point rather
+     * than a circle that cuts through partial cells.
+     * @param {GridOffset} originOffset
+     * @param {number} steps
+     * @returns {Iterable<number>}
+     */
+    _getSpacesInRange(originOffset, steps) {
+        if (steps <= 0) return [originOffset];
+
+        const key = (offset) => `${offset.i},${offset.j}`;
+        const visited = new Map([[key(originOffset), originOffset]]);
+        let frontier = [originOffset];
+        for (let i = 0; i < steps; i++) {
+            const next = [];
+            for (const offset of frontier) {
+                for (const adjacent of canvas.grid.getAdjacentOffsets(offset)) {
+                    const adjacentKey = key(adjacent);
+                    if (!visited.has(adjacentKey)) {
+                        visited.set(adjacentKey, adjacent);
+                        next.push(adjacent);
+                    }
+                }
+            }
+            frontier = next;
+        }
+        return visited.values();
     }
 
     /**
@@ -600,7 +644,7 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
     #migrateData() {
         const flags = this.scene.flags[MODULE] ?? {};
         // When there's a schema change, set the schemaVersion to the module version
-        const schemaVersion = "2.1.0";
+        const schemaVersion = "2.2.0";
         const flagsVersion = flags.schemaVersion ?? 0;
 
         // Stop if there is no reason to migrate
@@ -609,6 +653,24 @@ export class WorldExplorerLayer extends foundry.canvas.layers.InteractionLayer {
         const updateFlags = {
             "flags.world-explorer.schemaVersion": schemaVersion,
         };
+
+        // Update for space reveal capabilities
+        if (foundry.utils.isNewerVersion("2.2.0", flagsVersion)) {
+            if (typeof flags.revealRadius === "number" && !flags.tokenReveal) {
+                flags.tokenReveal = {
+                    units: "grid",
+                    value: flags.revealRadius > 0 ? flags.revealRadius : null,
+                };
+                delete flags.revealRadius;
+            }
+            if (typeof flags.gridRevealRadius === "number" && !flags.gridReveal) {
+                flags.gridReveal = {
+                    units: "grid",
+                    value: flags.gridRevealRadius
+                };
+                delete flags.gridRevealRadius;
+            }
+        }
 
         // Check if migration is needed
         if (foundry.utils.isNewerVersion("2.1.0", flagsVersion)) {

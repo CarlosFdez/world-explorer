@@ -3,34 +3,34 @@
         "Name": "World Explorer",
         "FIELDS": {
             "image": {
-                "Name": "Overlay Image"
+                "label": "Overlay Image"
             },
             "color": {
-                "Name": "Overlay Color",
-                "Hint": "Ignored if using an overlay image.",
+                "label": "Overlay Color",
+                "hint": "Ignored if using an overlay image.",
                 "Placeholder": "Default (#000000)"
             },
             "opacityGM": {
-                "Name": "Gamemaster Opacity"
+                "label": "Gamemaster Opacity"
             },
             "opacityPlayer": {
-                "Name": "Player Opacity"
+                "label": "Player Opacity"
             },
             "partialColor": {
-                "Name": "Partials Color",
-                "Hint": "If empty, the overlay color will be used. If not empty and using an overlay image, the partials will be colored for the GM but not for the players.",
+                "label": "Partials Color",
+                "hint": "If empty, the overlay color will be used. If not empty and using an overlay image, the partials will be colored for the GM but not for the players.",
                 "Placeholder": "Default (same as Overlay Color above)"
             },
             "partialOpacityPlayer": {
-                "Name": "Partials Opacity",
-                "Hint": "GMs will see a weighed opacity for the partially revealed spaces, calculated from the other opacities. This calculated value is shown on the right."
+                "label": "Partials Opacity",
+                "hint": "GMs will see a weighed opacity for the partially revealed spaces, calculated from the other opacities. This calculated value is shown on the right."
             },
             "persistExploredAreas": {
-                "Name": "Keep areas explored by tokens"
+                "label": "Keep areas explored by tokens"
             },
             "position": {
-                "Name": "Overlay Position",
-                "Hint": "Whether it should display below tiles and textures or above.",
+                "label": "Overlay Position",
+                "hint": "Whether it should display below tiles and textures or above.",
                 "Choices": {
                     "back": "Cover the map only",
                     "behindDrawings": "Cover the map and non-overhead tiles",
@@ -38,13 +38,13 @@
                     "front": "Cover everything except grid"
                 }
             },
-            "revealRadius": {
-                "Name": "Token Reveal Distance",
-                "Hint": "Distance (from center) to temporarily reveal around friendly tokens."
+            "tokenReveal": {
+                "label": "Token Reveal Distance",
+                "hint": "Distance (from center) to temporarily reveal around friendly tokens. Zero reveals the token's space only, and blank reveals nothing."
             },
-            "gridRevealRadius": {
-                "Name": "Extend Revealed Distance",
-                "Hint": "If set, revealed grid spaces extend a certain amount into hidden and partially revealed spaces. Does not extend the partially revealed spaces."
+            "gridReveal": {
+                "label": "Extend Revealed Distance",
+                "hint": "If set, revealed grid spaces extend a certain amount into hidden and partially revealed spaces. Does not extend the partially revealed spaces."
             }
         },
         "SceneSettings": {
@@ -60,6 +60,7 @@
                 "Title": "Token Interactions"
             }
         },
+        "SpacesUnit": "spaces",
         "Tools": {
             "Toggle": "Toggle Spaces",
             "Reveal": "Reveal Spaces",

@@ -86,3 +86,17 @@ export function calculateGmPartialOpacity({ opacityPlayer, opacityGM, opacityPar
     const newAlpha = partialRatio * opacityGM;
     return Math.min(opacityGM, opacityPartial * (1 - partialRatio) + newAlpha * partialRatio);
 }
+
+/**
+ * Converts grid units to pixels.
+ * @param {number} units 
+ * @returns {number}
+ */
+export function unitsToPixels(units) {
+    if (!(units > 0)) return 0;
+
+    // Convert from units to pixel radius, stolen from token.getLightRadius()
+    const u = Math.abs(units);
+    const hw = canvas.grid.sizeX / 2;
+    return ((u / canvas.dimensions.distance) * canvas.dimensions.size + hw) * Math.sign(units);
+}

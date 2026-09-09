@@ -19,7 +19,7 @@ export function insertIntoObject(object, options) {
     for (const key of Object.keys(object)) {
         delete object[key];
     }
-    mergeObject(object, result);
+    foundry.utils.mergeObject(object, result);
 
     return result;
 }

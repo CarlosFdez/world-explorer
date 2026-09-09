@@ -1,5 +1,6 @@
 {
   "id": "world-explorer",
+  "type": "module",
   "title": "World Explorer",
   "description": "Manual reveal of background image for map traversal tracking",
   "version": "2.2.1",
@@ -10,7 +11,7 @@
     }
   ],
   "compatibility": {
-    "minimum": "13",
+    "minimum": "14",
     "verified": "14",
     "maximum": "14"
   },

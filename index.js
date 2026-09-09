@@ -296,8 +296,17 @@ function updateForToken(token, data={}) {
     }
 }
 
-const refreshThrottled = foundry.utils.throttle((force) => {
-    if (force || canvas.worldExplorer?.settings.revealRadius) {
-        canvas.worldExplorer.refreshMask();
+const refreshThrottled = (() => {
+    let forced = false;
+    const debouncedFn = foundry.utils.throttle(() => {
+        if (forced || canvas.worldExplorer?.settings.revealRadius) {
+            canvas.worldExplorer.refreshMask();
+        }
+        forced = false;
+    }, 30);
+
+    return function (force) {
+        forced ||= force;
+        debouncedFn();
     }
-}, 30);
+})();

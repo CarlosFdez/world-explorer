@@ -72,6 +72,8 @@ export class SceneUpdater {
         const updates = {};
         const flagBase = `flags.${MODULE}.gridData`;
         for (const [key, value] of this.hexUpdates.entries()) {
+            // change to the following once we can drop support for v13
+            // updates[`${flagBase}.${key}`] = value.reveal === false ? _del : value;
             if (value.reveal === false) {
                 updates[`${flagBase}.-=${key}`] = null;
             } else {

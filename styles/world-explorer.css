@@ -18,8 +18,8 @@
 .application.scene-config {
     .sheet-tabs[data-application-part="tabs"] {
         line-height: 1.25;
-        padding-top: var(--spacer-8);
-        padding-bottom: var(--spacer-8);
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
     }
 
     select[name="flags.world-explorer.tokenReveal.units"],

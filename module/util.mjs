@@ -100,3 +100,21 @@ export function unitsToPixels(units) {
     const hw = canvas.grid.sizeX / 2;
     return ((u / canvas.dimensions.distance) * canvas.dimensions.size + hw) * Math.sign(units);
 }
+
+/** Stolen from youmightnotneed.lodash */
+export function debounce(func, delay, { leading } = {}) {
+  let timerId;
+  let shouldInvoke;
+
+  return (...args) => {
+    shouldInvoke = true
+
+    if (!timerId && leading) {
+      func(...args)
+      shouldInvoke = false
+    }
+    clearTimeout(timerId)
+
+    timerId = setTimeout(() => shouldInvoke && func(...args), delay)
+  }
+}

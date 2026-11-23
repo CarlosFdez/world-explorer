@@ -1,6 +1,6 @@
 import { OpacityGMAdjuster } from "./module/opacity-slider.mjs";
 import { WorldExplorerLayer, DEFAULT_SETTINGS } from "./module/world-explorer-layer.mjs";
-import { calculateGmPartialOpacity } from "./module/util.mjs";
+import { calculateGmPartialOpacity, debounce } from "./module/util.mjs";
 
 const POSITION_OPTIONS = {
     back: "WorldExplorer.FIELDS.position.Choices.back",
@@ -298,15 +298,15 @@ function updateForToken(token, data={}) {
 
 const refreshThrottled = (() => {
     let forced = false;
-    const debouncedFn = foundry.utils.throttle(() => {
-        if (forced || canvas.worldExplorer?.settings.revealRadius) {
+    const throttledFn = debounce(() => {
+        if (forced || canvas.worldExplorer?.settings?.tokenReveal?.value) {
             canvas.worldExplorer.refreshMask();
         }
         forced = false;
-    }, 30);
+    }, 50);
 
     return function (force) {
         forced ||= force;
-        debouncedFn();
+        throttledFn();
     }
 })();

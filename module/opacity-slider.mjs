@@ -51,9 +51,11 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
 
         // Adjust position of this application's window
         const bounds = ui.controls.element.querySelector('button[data-tool="opacity"]')?.getBoundingClientRect();
+        const thisBounds = this.element?.getBoundingClientRect();
         if (bounds) {
+            const heightDiff = thisBounds ? thisBounds.height - bounds.height : 0;
             element.style.left = `${bounds.right + 6}px`;
-            element.style.top = `${bounds.top}px`;
+            element.style.top = `${bounds.top - heightDiff / 2}px`;
         }
 
         element.addEventListener("input", (event) => {
@@ -68,6 +70,7 @@ export class OpacityGMAdjuster extends fapi.HandlebarsApplicationMixin(fapi.Appl
             this.close();
         } else {
             this.render({ force: true });
+            game.tooltip.deactivate();
         }
     }
 }

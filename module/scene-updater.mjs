@@ -67,7 +67,10 @@ export class SceneUpdater {
     }
 
     #performUpdates = foundry.utils.debounce(async () => {
-        if (this.updating) return;
+        if (this.updating) {
+            window.setTimeout(() => this.#performUpdates(), 10);
+            return;
+        }
 
         const updates = {};
         const flagBase = `flags.${MODULE}.gridData`;
